@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -36,13 +37,17 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired private QuestionRepository questionRepository;
     @Autowired private ChatSessionRepository chatSessionRepository;
     @Autowired private ChatMessageRepository chatMessageRepository;
+    @Autowired private RoleSkillTemplateRepository roleSkillTemplateRepository;
+    @Autowired private RoleSkillTemplateSkillRepository roleSkillTemplateSkillRepository;
 
     @Override
     public void run(String... args) throws Exception {
         if (userRepository.count() > 0) {
-            // If users exist but questions haven't been seeded yet, seed questions
             if (questionRepository.count() == 0) {
                 seedQuestions();
+            }
+            if (roleSkillTemplateRepository.count() == 0) {
+                seedRoleTemplates();
             }
             System.out.println("TalentOrbit Data already initialized. Skipping seed.");
             return;
@@ -62,7 +67,6 @@ public class DataInitializer implements CommandLineRunner {
         Skill kafka = skillRepository.save(new Skill("Apache Kafka", "Distributed Systems"));
 
         // 2. Seed Users across all 5 Roles
-        // Student
         User student = userRepository.save(new User("aryan.sharma@vsit.edu.in", "password123", Role.STUDENT, UserStatus.VERIFIED));
         StudentDetails sd = new StudentDetails();
         sd.setUser(student);
@@ -72,7 +76,7 @@ public class DataInitializer implements CommandLineRunner {
         sd.setBranch("B.Sc. Information Technology");
         sd.setGradYear(2026);
         sd.setCgpa(9.4);
-        sd.setTargetRole("Backend Microservices Engineer");
+        sd.setTargetRole("Backend Developer");
         sd.setEmployabilityScore(92);
         studentDetailsRepository.save(sd);
 
@@ -83,6 +87,7 @@ public class DataInitializer implements CommandLineRunner {
         ss1.setProficiency(ProficiencyLevel.ADVANCED);
         ss1.setIsVerified(true);
         ss1.setLastAssessed(LocalDate.now().minusDays(10));
+        ss1.setVerificationHash("0x9a8f4c2e1b7d5a3f");
         studentSkillRepository.save(ss1);
 
         StudentSkill ss2 = new StudentSkill();
@@ -91,6 +96,7 @@ public class DataInitializer implements CommandLineRunner {
         ss2.setProficiency(ProficiencyLevel.ADVANCED);
         ss2.setIsVerified(true);
         ss2.setLastAssessed(LocalDate.now().minusDays(12));
+        ss2.setVerificationHash("0x4b7e1f9a2c5d8a3e");
         studentSkillRepository.save(ss2);
 
         StudentSkill ss3 = new StudentSkill();
@@ -99,6 +105,7 @@ public class DataInitializer implements CommandLineRunner {
         ss3.setProficiency(ProficiencyLevel.INTERMEDIATE);
         ss3.setIsVerified(true);
         ss3.setLastAssessed(LocalDate.now().minusDays(15));
+        ss3.setVerificationHash("0x8e2c5a1f7d9b4a3f");
         studentSkillRepository.save(ss3);
 
         StudentSkill ss4 = new StudentSkill();
@@ -132,7 +139,6 @@ public class DataInitializer implements CommandLineRunner {
         ad.setBio("14+ years experience in distributed architectures, cloud computing, and healthcare informatics.");
         academicianDetailsRepository.save(ad);
 
-        // Academician Interest Tags
         AcademicianInterestTag ait1 = new AcademicianInterestTag();
         ait1.setUser(academician);
         ait1.setSkill(java);
@@ -159,7 +165,7 @@ public class DataInitializer implements CommandLineRunner {
         // SuperAdmin
         User admin = userRepository.save(new User("superadmin@talentorbit.gov.in", "admin123", Role.SUPERADMIN, UserStatus.VERIFIED));
 
-        // 3. Seed Postings (Industry & Academia)
+        // 3. Seed Postings
         Posting p1 = new Posting();
         p1.setPostedBy(recruiter);
         p1.setTitle("Senior Java Microservices & Cloud Intern");
@@ -167,6 +173,7 @@ public class DataInitializer implements CommandLineRunner {
         p1.setDescription("Build high-performance REST APIs and containerized microservices using Java 21, Spring Boot 3, and MySQL.");
         p1.setLocation("Mumbai (Hybrid)");
         p1.setStipend("₹35,000 / month");
+        p1.setStipendAmount(new BigDecimal("35000"));
         p1.setDeadline(LocalDate.now().plusMonths(2));
         p1.setIsActive(true);
         Posting savedP1 = postingRepository.save(p1);
@@ -207,6 +214,7 @@ public class DataInitializer implements CommandLineRunner {
         p2.setDescription("Hands-on industry sabbatical and curriculum alignment bootcamp for engineering faculty.");
         p2.setLocation("Online / Hybrid");
         p2.setStipend("AICTE Certified");
+        p2.setStipendAmount(new BigDecimal("0"));
         p2.setDeadline(LocalDate.now().plusMonths(1));
         p2.setIsActive(true);
         Posting savedP2 = postingRepository.save(p2);
@@ -214,7 +222,27 @@ public class DataInitializer implements CommandLineRunner {
         PostingSkill psFdp = new PostingSkill();
         psFdp.setPosting(savedP2);
         psFdp.setSkill(java);
+        psFdp.setWeight(3);
         postingSkillRepository.save(psFdp);
+
+        // Research Posting
+        Posting p3 = new Posting();
+        p3.setPostedBy(recruiter);
+        p3.setTitle("Joint Industry-Academia Research Grant: Microservices Resiliency in Healthcare");
+        p3.setPostingType(PostingType.RESEARCH);
+        p3.setDescription("Sponsored research grant for developing resilient, fault-tolerant microservice architectures in health-tech ABDM standards.");
+        p3.setLocation("National / Remote");
+        p3.setStipend("₹5,00,000 Grant");
+        p3.setStipendAmount(new BigDecimal("500000"));
+        p3.setDeadline(LocalDate.now().plusMonths(3));
+        p3.setIsActive(true);
+        Posting savedP3 = postingRepository.save(p3);
+
+        PostingSkill psRes = new PostingSkill();
+        psRes.setPosting(savedP3);
+        psRes.setSkill(spring);
+        psRes.setWeight(4);
+        postingSkillRepository.save(psRes);
 
         // 4. Seed Applications & Interviews
         Application app = new Application();
@@ -228,7 +256,7 @@ public class DataInitializer implements CommandLineRunner {
         interview.setApplication(savedApp);
         interview.setScheduledAt(LocalDateTime.now().plusDays(2).withHour(10).withMinute(30));
         interview.setInterviewerName("Vikram Joshi (Engineering Lead)");
-        interview.setMeetingLink("https://meet.google.com/abc-defg-hij");
+        interview.setMeetingLink("https://meet.jit.si/TalentOrbit-" + savedApp.getId() + "-techlead");
         interview.setStatus(InterviewStatus.SCHEDULED);
         interview.setNotes("Focus on Spring Boot architecture, MySQL query optimization, and REST API design.");
         interviewRepository.save(interview);
@@ -241,6 +269,7 @@ public class DataInitializer implements CommandLineRunner {
         port1.setDescription("Production-grade microservices gateway with JWT authentication and Spring Cloud load balancing.");
         port1.setFileOrLink("https://github.com/aryan/talentorbit-gateway");
         port1.setIsVerified(true);
+        port1.setVerificationHash("0x7f9a2b5c4d8e1f3a");
         portfolioRepository.save(port1);
 
         Portfolio port2 = new Portfolio();
@@ -250,62 +279,59 @@ public class DataInitializer implements CommandLineRunner {
         port2.setDescription("Issued by Oracle University. Verification Hash: 0x9f8a...4b12");
         port2.setFileOrLink("https://catalog-education.oracle.com/ords/certview/cert?id=12345");
         port2.setIsVerified(true);
+        port2.setVerificationHash("0x9f8a4b12c7e5d3a1");
         portfolioRepository.save(port2);
 
-        // Roadmap Steps
-        RoadmapStep r1 = new RoadmapStep();
-        r1.setUser(student);
-        r1.setStepOrder(1);
-        r1.setTitle("Master Java 21 Virtual Threads & Concurrency");
-        r1.setDescription("Completed core modern Java paradigms.");
-        r1.setStatus(RoadmapStepStatus.DONE);
-        r1.setLinkedSkill(java);
-        roadmapStepRepository.save(r1);
-
-        RoadmapStep r2 = new RoadmapStep();
-        r2.setUser(student);
-        r2.setStepOrder(2);
-        r2.setTitle("Spring Boot 3.3 Microservices Architecture");
-        r2.setDescription("Build modular microservices with Hibernate ORM.");
-        r2.setStatus(RoadmapStepStatus.DONE);
-        r2.setLinkedSkill(spring);
-        roadmapStepRepository.save(r2);
-
-        RoadmapStep r3 = new RoadmapStep();
-        r3.setUser(student);
-        r3.setStepOrder(3);
-        r3.setTitle("Docker Containerization & Multi-stage Builds");
-        r3.setDescription("Learn Dockerfile creation, image optimization, and container deployment.");
-        r3.setStatus(RoadmapStepStatus.IN_PROGRESS);
-        r3.setLinkedSkill(docker);
-        roadmapStepRepository.save(r3);
-
-        RoadmapStep r4 = new RoadmapStep();
-        r4.setUser(student);
-        r4.setStepOrder(4);
-        r4.setTitle("Kubernetes Cluster Orchestration & Helm");
-        r4.setDescription("Deploy scalable workloads in production cluster.");
-        r4.setStatus(RoadmapStepStatus.LOCKED);
-        r4.setLinkedSkill(k8s);
-        roadmapStepRepository.save(r4);
-
-        // 6. Seed Badges
+        // 6. Seed Exactly 6 Badge Tiers
         Badge b1 = new Badge();
         b1.setName("Skill Profile Pioneer");
-        b1.setDescription("Verified 3 or more technical skills through adaptive MCQ assessments.");
-        b1.setIconUrl("verified_shield.svg");
-        b1.setCriteriaType(BadgeCriteriaType.SKILLS_VERIFIED_COUNT);
-        b1.setCriteriaValue(3);
+        b1.setDescription("Completed full profile details with institutional verification.");
+        b1.setIconUrl("pioneer_badge.svg");
+        b1.setCriteriaType(BadgeCriteriaType.PROFILE_COMPLETE);
+        b1.setCriteriaValue(1);
         badgeRepository.save(b1);
 
         Badge b2 = new Badge();
-        b2.setName("First Opportunity Applied");
+        b2.setName("First Application");
         b2.setDescription("Submitted your first 1-Click matched internship application.");
         b2.setIconUrl("rocket_launch.svg");
         b2.setCriteriaType(BadgeCriteriaType.FIRST_APPLICATION);
         b2.setCriteriaValue(1);
         badgeRepository.save(b2);
 
+        Badge b3 = new Badge();
+        b3.setName("Assessment Master");
+        b3.setDescription("Completed 5 or more technical skill MCQ assessments.");
+        b3.setIconUrl("quiz_master.svg");
+        b3.setCriteriaType(BadgeCriteriaType.ASSESSMENT_EXCELLENCE);
+        b3.setCriteriaValue(5);
+        badgeRepository.save(b3);
+
+        Badge b4 = new Badge();
+        b4.setName("Skill Verified");
+        b4.setDescription("Earned official verification on at least 1 technical skill.");
+        b4.setIconUrl("verified_shield.svg");
+        b4.setCriteriaType(BadgeCriteriaType.SKILLS_VERIFIED_COUNT);
+        b4.setCriteriaValue(1);
+        badgeRepository.save(b4);
+
+        Badge b5 = new Badge();
+        b5.setName("Interview Ready");
+        b5.setDescription("Successfully shortlisted and scheduled for a technical interview.");
+        b5.setIconUrl("interview_ready.svg");
+        b5.setCriteriaType(BadgeCriteriaType.INTERVIEW_READY);
+        b5.setCriteriaValue(1);
+        badgeRepository.save(b5);
+
+        Badge b6 = new Badge();
+        b6.setName("Placement Achiever");
+        b6.setDescription("Completed an industry internship with high mentor endorsement ratings.");
+        b6.setIconUrl("trophy_achiever.svg");
+        b6.setCriteriaType(BadgeCriteriaType.PLACEMENT_ACHIEVER);
+        b6.setCriteriaValue(1);
+        badgeRepository.save(b6);
+
+        // Award initial earned badges
         StudentBadge sb1 = new StudentBadge();
         sb1.setUser(student);
         sb1.setBadge(b1);
@@ -317,6 +343,12 @@ public class DataInitializer implements CommandLineRunner {
         sb2.setBadge(b2);
         sb2.setEarnedAt(LocalDateTime.now().minusDays(2));
         studentBadgeRepository.save(sb2);
+
+        StudentBadge sb3 = new StudentBadge();
+        sb3.setUser(student);
+        sb3.setBadge(b4);
+        sb3.setEarnedAt(LocalDateTime.now().minusDays(1));
+        studentBadgeRepository.save(sb3);
 
         // 7. Seed Academician Collaborations
         AcademicianInterest ai = new AcademicianInterest();
@@ -338,27 +370,50 @@ public class DataInitializer implements CommandLineRunner {
         // 9. Seed Platform Settings & Audit Logs
         platformSettingRepository.save(new PlatformSetting("PLATFORM_NAME", "TalentOrbit"));
         platformSettingRepository.save(new PlatformSetting("SIH_PROBLEM_STATEMENT", "SIH-26044"));
+        platformSettingRepository.save(new PlatformSetting("min_stipend_amount", "15000"));
         platformSettingRepository.save(new PlatformSetting("SMTP_HOST", "smtp.gmail.com:587"));
 
         auditLogRepository.save(new AuditLog(admin, "SUPERADMIN_LOGIN", "SYSTEM", 1L, "127.0.0.1"));
         auditLogRepository.save(new AuditLog(admin, "KYC_APPROVE_COMPANY", "COMPANY", cd.getId(), "127.0.0.1"));
         auditLogRepository.save(new AuditLog(admin, "KYC_APPROVE_INSTITUTION", "INSTITUTION", id.getId(), "127.0.0.1"));
 
-        // 10. Seed Topic-Tagged Question Bank & Chatbot Demo
+        // 10. Seed Role Skill Templates & Questions
+        seedRoleTemplates();
         seedQuestions();
 
         ChatSession chatSession = chatSessionRepository.save(new ChatSession(student, "Getting Started with Microservices"));
         chatMessageRepository.save(new ChatMessage(chatSession, Sender.USER, "How can I prepare for the Senior Java Intern role at TechCorp?", null));
         chatMessageRepository.save(new ChatMessage(chatSession, Sender.ASSISTANT, "Based on your 92% match score, you have strong Java 21 and Spring Boot foundations! To stand out, focus on bridging your Docker gap by practicing multi-stage Dockerfile builds and container networking.", null));
 
-        System.out.println("TalentOrbit demo seed data with AI Question Bank & Chatbot successfully populated!");
+        System.out.println("TalentOrbit demo seed data successfully populated with all 19 features!");
+    }
+
+    private void seedRoleTemplates() {
+        Skill java = skillRepository.findByName("Java 21").orElse(null);
+        Skill spring = skillRepository.findByName("Spring Boot 3.3").orElse(null);
+        Skill mysql = skillRepository.findByName("MySQL").orElse(null);
+        Skill docker = skillRepository.findByName("Docker").orElse(null);
+        Skill k8s = skillRepository.findByName("Kubernetes").orElse(null);
+        Skill react = skillRepository.findByName("React 19").orElse(null);
+
+        RoleSkillTemplate backend = roleSkillTemplateRepository.save(new RoleSkillTemplate("Backend Developer", "Server-side microservices, REST APIs, and database engineering."));
+        if (java != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(backend, java, 5));
+        if (spring != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(backend, spring, 5));
+        if (mysql != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(backend, mysql, 4));
+        if (docker != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(backend, docker, 4));
+        if (k8s != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(backend, k8s, 3));
+
+        RoleSkillTemplate fullstack = roleSkillTemplateRepository.save(new RoleSkillTemplate("Full Stack Java Developer", "End-to-end full stack development with modern React and Spring Boot."));
+        if (java != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(fullstack, java, 5));
+        if (spring != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(fullstack, spring, 5));
+        if (react != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(fullstack, react, 4));
+        if (mysql != null) roleSkillTemplateSkillRepository.save(new RoleSkillTemplateSkill(fullstack, mysql, 3));
     }
 
     private void seedQuestions() {
         Skill mysql = skillRepository.findByName("MySQL").orElse(null);
         if (mysql == null) return;
 
-        // Topic-Tagged SQL Questions
         questionRepository.save(new Question(mysql, "JOIN", "Which SQL JOIN returns all rows from the left table, and matching rows from the right table?", "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN", "B", "LEFT JOIN preserves all records from the left table even when there are no matches on the right."));
         questionRepository.save(new Question(mysql, "JOIN", "What is the result of performing a CROSS JOIN between Table A (5 rows) and Table B (4 rows)?", "9 rows", "20 rows", "1 row", "Error", "B", "CROSS JOIN produces a Cartesian product multiplying 5 * 4 = 20 rows."));
         questionRepository.save(new Question(mysql, "JOIN", "When joining tables on non-primary key columns, which indexing strategy optimizes query latency?", "Composite B-Tree index on foreign key columns", "Full-text index", "Hash index on SELECT columns", "No index needed", "A", "B-Tree indexes on join condition columns prevent full table scans."));

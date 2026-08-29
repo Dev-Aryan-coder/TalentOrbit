@@ -1,6 +1,8 @@
 package com.example.TalentOrbit.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @Entity
 @Table(name = "posting_skills", uniqueConstraints = {
@@ -22,7 +24,10 @@ public class PostingSkill {
     @Column(name = "is_mandatory", nullable = false)
     private Boolean isMandatory = true;
 
-    private Integer weight = 1;
+    @Min(1)
+    @Max(5)
+    @Column(name = "weight")
+    private Integer weight = 3;
 
     public PostingSkill() {}
 

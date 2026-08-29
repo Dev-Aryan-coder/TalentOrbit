@@ -1,7 +1,9 @@
 package com.example.TalentOrbit.controller;
 
 import com.example.TalentOrbit.dto.request.PostingCreateDTO;
+import com.example.TalentOrbit.dto.request.SkillPreviewRequestDTO;
 import com.example.TalentOrbit.dto.response.PostingResponseDTO;
+import com.example.TalentOrbit.dto.response.SkillPreviewResponseDTO;
 import com.example.TalentOrbit.enums.PostingType;
 import com.example.TalentOrbit.service.PostingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,13 +18,19 @@ import java.util.stream.Collectors;
 public class PostingController {
     @Autowired private PostingService postingService;
 
+    // Live talent availability preview before saving posting
+    @PostMapping("/preview-match-count")
+    public ResponseEntity<SkillPreviewResponseDTO> previewMatchCount(@RequestBody SkillPreviewRequestDTO req) {
+        return ResponseEntity.ok(postingService.countMatchingStudents(req != null ? req.getSkillIds() : null));
+    }
+
     // 16_Industry_Post_Opportunity
     @PostMapping("/create")
     public ResponseEntity<PostingResponseDTO> createPosting(@RequestBody PostingCreateDTO req) {
         return ResponseEntity.ok(postingService.createPosting(req));
     }
 
-    // 17_Industry_My_Opportunities & 26_Academician_Opportunities (All Active)
+    // 17_Industry_My_Opportunities & Active
     @GetMapping("/active")
     public ResponseEntity<List<PostingResponseDTO>> getActivePostings() {
         return ResponseEntity.ok(postingService.getAllActivePostings());

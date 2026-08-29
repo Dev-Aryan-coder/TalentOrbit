@@ -31,6 +31,9 @@ public class StudentSkill {
     @Column(name = "last_assessed")
     private LocalDate lastAssessed;
 
+    @Column(name = "verification_hash")
+    private String verificationHash;
+
     public StudentSkill() {}
 
     public Long getId() { return id; }
@@ -50,4 +53,7 @@ public class StudentSkill {
 
     public LocalDate getLastAssessed() { return lastAssessed; }
     public void setLastAssessed(LocalDate lastAssessed) { this.lastAssessed = lastAssessed; }
+
+    public String getVerificationHash() { return verificationHash; }
+    public void setVerificationHash(String verificationHash) { this.verificationHash = verificationHash; }
 }

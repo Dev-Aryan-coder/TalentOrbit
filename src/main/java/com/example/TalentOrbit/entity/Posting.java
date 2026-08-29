@@ -2,6 +2,7 @@ package com.example.TalentOrbit.entity;
 
 import com.example.TalentOrbit.enums.PostingType;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -16,12 +17,12 @@ public class Posting {
     @JoinColumn(name = "posted_by", nullable = false)
     private User postedBy;
 
-    @Column(nullable = false)
-    private String title;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "posting_type", nullable = false)
     private PostingType postingType;
+
+    @Column(nullable = false)
+    private String title;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
@@ -29,14 +30,16 @@ public class Posting {
     private String location;
     private String stipend;
 
-    @Column(name = "deadline")
-    private LocalDate deadline;
+    @Column(name = "stipend_amount")
+    private BigDecimal stipendAmount;
 
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    private LocalDate deadline;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     public Posting() {}
 
@@ -46,11 +49,11 @@ public class Posting {
     public User getPostedBy() { return postedBy; }
     public void setPostedBy(User postedBy) { this.postedBy = postedBy; }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
     public PostingType getPostingType() { return postingType; }
     public void setPostingType(PostingType postingType) { this.postingType = postingType; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
@@ -61,12 +64,15 @@ public class Posting {
     public String getStipend() { return stipend; }
     public void setStipend(String stipend) { this.stipend = stipend; }
 
+    public BigDecimal getStipendAmount() { return stipendAmount; }
+    public void setStipendAmount(BigDecimal stipendAmount) { this.stipendAmount = stipendAmount; }
+
     public LocalDate getDeadline() { return deadline; }
     public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
 
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
-
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 }

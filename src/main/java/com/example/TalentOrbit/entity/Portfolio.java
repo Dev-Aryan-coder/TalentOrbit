@@ -30,6 +30,9 @@ public class Portfolio {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
 
+    @Column(name = "verification_hash")
+    private String verificationHash;
+
     public Portfolio() {}
 
     public Long getId() { return id; }
@@ -52,4 +55,7 @@ public class Portfolio {
 
     public Boolean getIsVerified() { return isVerified; }
     public void setIsVerified(Boolean isVerified) { this.isVerified = isVerified; }
+
+    public String getVerificationHash() { return verificationHash; }
+    public void setVerificationHash(String verificationHash) { this.verificationHash = verificationHash; }
 }

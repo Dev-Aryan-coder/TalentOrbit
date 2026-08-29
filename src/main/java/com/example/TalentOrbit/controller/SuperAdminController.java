@@ -8,7 +8,9 @@ import com.example.TalentOrbit.enums.Role;
 import com.example.TalentOrbit.enums.UserStatus;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.UserRepository;
+import com.example.TalentOrbit.service.AuditLogService;
 import com.example.TalentOrbit.service.SuperAdminService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,29 +22,30 @@ import java.util.List;
 public class SuperAdminController {
     @Autowired private SuperAdminService superAdminService;
     @Autowired private UserRepository userRepository;
+    @Autowired private AuditLogService auditLogService;
 
-    // 47, 48, 49_SuperAdmin Approvals Queue
     @GetMapping("/verifications/pending")
     public ResponseEntity<List<PendingRegistrationResponseDTO>> getPending() {
         return ResponseEntity.ok(superAdminService.getPendingVerifications());
     }
 
-    // Approve / Reject Decision Trigger
     @PostMapping("/verifications/decide")
-    public ResponseEntity<String> decide(@RequestBody VerificationDecisionDTO req) {
+    public ResponseEntity<String> decide(@RequestBody VerificationDecisionDTO req, HttpServletRequest request) {
         superAdminService.decideVerification(req);
+        User admin = userRepository.findAll().stream().filter(u -> u.getRole() == Role.SUPERADMIN).findFirst().orElse(null);
+        if (admin != null) {
+            auditLogService.log(admin, "KYC_DECISION_" + req.getDecision(), "USER", req.getUserId(), request);
+        }
         return ResponseEntity.ok("Verification decision processed successfully");
     }
 
-    // 46_SuperAdmin_Users Master List
     @GetMapping("/users")
     public ResponseEntity<List<UserSummaryResponseDTO>> getAllUsers(@RequestParam(required = false) Role role) {
         return ResponseEntity.ok(superAdminService.getAllUsers(role));
     }
 
-    // User Suspend / Reactivate Action
     @PatchMapping("/user/{userId}/toggle-suspend")
-    public ResponseEntity<String> toggleSuspend(@PathVariable Long userId) {
+    public ResponseEntity<String> toggleSuspend(@PathVariable Long userId, HttpServletRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (user.getStatus() == UserStatus.SUSPENDED) {
@@ -51,6 +54,12 @@ public class SuperAdminController {
             user.setStatus(UserStatus.SUSPENDED);
         }
         userRepository.save(user);
+
+        User admin = userRepository.findAll().stream().filter(u -> u.getRole() == Role.SUPERADMIN).findFirst().orElse(null);
+        if (admin != null) {
+            auditLogService.log(admin, "USER_STATUS_TOGGLED", "USER", user.getId(), request);
+        }
+
         return ResponseEntity.ok("User status updated to: " + user.getStatus());
     }
 }

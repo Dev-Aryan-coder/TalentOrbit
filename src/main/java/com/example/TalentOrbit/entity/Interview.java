@@ -1,6 +1,7 @@
 package com.example.TalentOrbit.entity;
 
 import com.example.TalentOrbit.enums.InterviewStatus;
+import com.example.TalentOrbit.enums.OverallRecommendation;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -28,6 +29,19 @@ public class Interview {
     @Column(nullable = false)
     private InterviewStatus status = InterviewStatus.SCHEDULED;
 
+    @Column(name = "technical_score")
+    private Integer technicalScore; // 1-5
+
+    @Column(name = "communication_score")
+    private Integer communicationScore; // 1-5
+
+    @Column(name = "culture_fit_score")
+    private Integer cultureFitScore; // 1-5
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "overall_recommendation")
+    private OverallRecommendation overallRecommendation;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -50,6 +64,18 @@ public class Interview {
 
     public InterviewStatus getStatus() { return status; }
     public void setStatus(InterviewStatus status) { this.status = status; }
+
+    public Integer getTechnicalScore() { return technicalScore; }
+    public void setTechnicalScore(Integer technicalScore) { this.technicalScore = technicalScore; }
+
+    public Integer getCommunicationScore() { return communicationScore; }
+    public void setCommunicationScore(Integer communicationScore) { this.communicationScore = communicationScore; }
+
+    public Integer getCultureFitScore() { return cultureFitScore; }
+    public void setCultureFitScore(Integer cultureFitScore) { this.cultureFitScore = cultureFitScore; }
+
+    public OverallRecommendation getOverallRecommendation() { return overallRecommendation; }
+    public void setOverallRecommendation(OverallRecommendation overallRecommendation) { this.overallRecommendation = overallRecommendation; }
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }

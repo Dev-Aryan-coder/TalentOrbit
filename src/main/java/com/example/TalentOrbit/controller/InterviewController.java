@@ -1,6 +1,7 @@
 package com.example.TalentOrbit.controller;
 
 import com.example.TalentOrbit.dto.request.InterviewCreateDTO;
+import com.example.TalentOrbit.dto.request.InterviewRubricDTO;
 import com.example.TalentOrbit.dto.request.InterviewStatusUpdateDTO;
 import com.example.TalentOrbit.dto.response.InterviewResponseDTO;
 import com.example.TalentOrbit.service.InterviewService;
@@ -30,5 +31,12 @@ public class InterviewController {
             @PathVariable Long interviewId,
             @RequestBody InterviewStatusUpdateDTO req) {
         return ResponseEntity.ok(interviewService.updateStatus(interviewId, req));
+    }
+
+    @PatchMapping("/{interviewId}/rubric")
+    public ResponseEntity<InterviewResponseDTO> submitRubric(
+            @PathVariable Long interviewId,
+            @RequestBody InterviewRubricDTO req) {
+        return ResponseEntity.ok(interviewService.submitRubric(interviewId, req));
     }
 }

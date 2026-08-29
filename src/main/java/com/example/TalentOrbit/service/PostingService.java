@@ -2,56 +2,110 @@ package com.example.TalentOrbit.service;
 
 import com.example.TalentOrbit.dto.request.PostingCreateDTO;
 import com.example.TalentOrbit.dto.response.PostingResponseDTO;
-import com.example.TalentOrbit.entity.Posting;
-import com.example.TalentOrbit.entity.PostingSkill;
-import com.example.TalentOrbit.entity.Skill;
-import com.example.TalentOrbit.entity.User;
+import com.example.TalentOrbit.dto.response.SkillPreviewResponseDTO;
+import com.example.TalentOrbit.entity.*;
+import com.example.TalentOrbit.enums.FlagItemType;
+import com.example.TalentOrbit.enums.FlagStatus;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
-import com.example.TalentOrbit.repository.PostingRepository;
-import com.example.TalentOrbit.repository.PostingSkillRepository;
-import com.example.TalentOrbit.repository.SkillRepository;
-import com.example.TalentOrbit.repository.UserRepository;
+import com.example.TalentOrbit.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class PostingService {
     @Autowired private PostingRepository postingRepository;
     @Autowired private PostingSkillRepository postingSkillRepository;
-    @Autowired private UserRepository userRepository;
     @Autowired private SkillRepository skillRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private StudentSkillRepository studentSkillRepository;
+    @Autowired private PlatformSettingRepository platformSettingRepository;
+    @Autowired private FlagRepository flagRepository;
+
+    public SkillPreviewResponseDTO countMatchingStudents(List<Long> skillIds) {
+        if (skillIds == null || skillIds.isEmpty()) {
+            return new SkillPreviewResponseDTO(0, 0);
+        }
+
+        Map<Long, Set<Long>> studentSkillsMap = new HashMap<>();
+        List<StudentSkill> allStudentSkills = studentSkillRepository.findAll();
+        for (StudentSkill ss : allStudentSkills) {
+            Long studentId = ss.getUser().getId();
+            studentSkillsMap.computeIfAbsent(studentId, k -> new HashSet<>()).add(ss.getSkill().getId());
+        }
+
+        Set<Long> reqSet = new HashSet<>(skillIds);
+        int allMatch = 0;
+        int anyMatch = 0;
+
+        for (Set<Long> heldSkills : studentSkillsMap.values()) {
+            if (heldSkills.containsAll(reqSet)) {
+                allMatch++;
+            }
+            if (!Collections.disjoint(heldSkills, reqSet)) {
+                anyMatch++;
+            }
+        }
+
+        return new SkillPreviewResponseDTO(allMatch, anyMatch);
+    }
 
     public PostingResponseDTO createPosting(PostingCreateDTO req) {
         User user = userRepository.findById(req.getPostedByUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        Posting p = new Posting();
-        p.setPostedBy(user);
-        p.setTitle(req.getTitle());
-        p.setPostingType(req.getPostingType());
-        p.setDescription(req.getDescription());
-        p.setLocation(req.getLocation());
-        p.setStipend(req.getStipend());
-        p.setDeadline(req.getDeadline());
-        p.setIsActive(true);
-        Posting saved = postingRepository.save(p);
+
+        Posting posting = new Posting();
+        posting.setPostedBy(user);
+        posting.setTitle(req.getTitle());
+        posting.setPostingType(req.getPostingType());
+        posting.setDescription(req.getDescription());
+        posting.setLocation(req.getLocation());
+        posting.setStipend(req.getStipend());
+        posting.setStipendAmount(req.getStipendAmount());
+        posting.setDeadline(req.getDeadline());
+        posting.setIsActive(true);
+
+        Posting saved = postingRepository.save(posting);
 
         List<String> skillNames = new ArrayList<>();
-        if (req.getSkillIds() != null) {
-            for (Long sid : req.getSkillIds()) {
-                Skill skill = skillRepository.findById(sid).orElse(null);
+        if (req.getSkillWeights() != null) {
+            for (Map.Entry<Long, Integer> entry : req.getSkillWeights().entrySet()) {
+                Skill skill = skillRepository.findById(entry.getKey()).orElse(null);
                 if (skill != null) {
                     PostingSkill ps = new PostingSkill();
                     ps.setPosting(saved);
                     ps.setSkill(skill);
+                    ps.setIsMandatory(true);
+                    int weight = (entry.getValue() != null && entry.getValue() >= 1 && entry.getValue() <= 5) ? entry.getValue() : 3;
+                    ps.setWeight(weight);
                     postingSkillRepository.save(ps);
                     skillNames.add(skill.getName());
                 }
             }
         }
+
+        // Auto-flag below minimum stipend policy
+        if (req.getStipendAmount() != null) {
+            Optional<PlatformSetting> minStipendSetting = platformSettingRepository.findBySettingKey("min_stipend_amount");
+            if (minStipendSetting.isPresent()) {
+                try {
+                    BigDecimal minStipend = new BigDecimal(minStipendSetting.get().getSettingValue().trim());
+                    if (req.getStipendAmount().compareTo(minStipend) < 0) {
+                        Flag autoFlag = new Flag();
+                        autoFlag.setItemType(FlagItemType.POSTING);
+                        autoFlag.setItemId(saved.getId());
+                        autoFlag.setReportedBy(user);
+                        autoFlag.setReason(String.format("Offered stipend (₹%s) is below the configured platform policy threshold (₹%s).", req.getStipendAmount(), minStipend));
+                        autoFlag.setStatus(FlagStatus.PENDING);
+                        flagRepository.save(autoFlag);
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
         PostingResponseDTO dto = new PostingResponseDTO();
         dto.setId(saved.getId());
         dto.setPostedByUserId(user.getId());
@@ -78,9 +132,8 @@ public class PostingService {
             dto.setStipend(p.getStipend());
             dto.setDeadline(p.getDeadline());
             dto.setIsActive(p.getIsActive());
-            List<String> skills = postingSkillRepository.findByPosting(p).stream()
-                    .map(ps -> ps.getSkill().getName()).collect(Collectors.toList());
-            dto.setRequiredSkills(skills);
+            List<PostingSkill> skills = postingSkillRepository.findByPosting(p);
+            dto.setRequiredSkills(skills.stream().map(ps -> ps.getSkill().getName()).collect(Collectors.toList()));
             return dto;
         }).collect(Collectors.toList());
     }
