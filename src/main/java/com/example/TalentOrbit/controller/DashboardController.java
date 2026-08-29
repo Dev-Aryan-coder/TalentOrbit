@@ -1,0 +1,19 @@
+package com.example.TalentOrbit.controller;
+
+import com.example.TalentOrbit.dto.response.DashboardStatsResponseDTO;
+import com.example.TalentOrbit.enums.Role;
+import com.example.TalentOrbit.service.DashboardService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/dashboard")
+public class DashboardController {
+    @Autowired private DashboardService dashboardService;
+
+    @GetMapping("/stats")
+    public ResponseEntity<DashboardStatsResponseDTO> getStats(@RequestParam(defaultValue = "STUDENT") Role role) {
+        return ResponseEntity.ok(dashboardService.getStatsForRole(role));
+    }
+}
