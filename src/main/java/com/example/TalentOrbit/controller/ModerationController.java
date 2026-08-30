@@ -4,6 +4,7 @@ import com.example.TalentOrbit.dto.request.FlagCreateDTO;
 import com.example.TalentOrbit.dto.request.FlagDecisionDTO;
 import com.example.TalentOrbit.dto.response.FlagResponseDTO;
 import com.example.TalentOrbit.service.ModerationService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +27,11 @@ public class ModerationController {
     }
 
     @PatchMapping("/flag/{flagId}/decide")
-    public ResponseEntity<String> decideFlag(@PathVariable Long flagId, @RequestBody FlagDecisionDTO req) {
-        moderationService.decideFlag(flagId, req);
+    public ResponseEntity<String> decideFlag(
+            @PathVariable Long flagId, 
+            @RequestBody FlagDecisionDTO req,
+            HttpServletRequest request) {
+        moderationService.decideFlag(flagId, req, request);
         return ResponseEntity.ok("Flag decision updated");
     }
 }

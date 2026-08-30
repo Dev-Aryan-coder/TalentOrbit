@@ -13,6 +13,7 @@ import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.FlagRepository;
 import com.example.TalentOrbit.repository.PostingRepository;
 import com.example.TalentOrbit.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -64,7 +65,7 @@ public class ModerationService {
         }).collect(Collectors.toList());
     }
 
-    public void decideFlag(Long flagId, FlagDecisionDTO req) {
+    public void decideFlag(Long flagId, FlagDecisionDTO req, HttpServletRequest request) {
         Flag flag = flagRepository.findById(flagId)
                 .orElseThrow(() -> new ResourceNotFoundException("Flag not found"));
         flag.setStatus(req.getDecision());
@@ -80,11 +81,15 @@ public class ModerationService {
 
         User admin = userRepository.findAll().stream().filter(u -> u.getRole() == Role.SUPERADMIN).findFirst().orElse(null);
         if (admin != null) {
-            auditLogService.log(admin, "MODERATION_FLAG_" + req.getDecision(), "FLAG", flag.getId(), "127.0.0.1");
+            auditLogService.log(admin, "MODERATION_FLAG_" + req.getDecision(), "FLAG", flag.getId(), request);
         }
     }
 
+    public void decideFlag(Long flagId, FlagDecisionDTO req) {
+        decideFlag(flagId, req, (HttpServletRequest) null);
+    }
+
     public void decideFlag(FlagDecisionDTO req) {
-        decideFlag(req.getFlagId(), req);
+        decideFlag(req.getFlagId(), req, (HttpServletRequest) null);
     }
 }
