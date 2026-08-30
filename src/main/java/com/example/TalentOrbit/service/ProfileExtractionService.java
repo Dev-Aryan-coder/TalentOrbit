@@ -7,8 +7,6 @@ import com.example.TalentOrbit.entity.*;
 import com.example.TalentOrbit.enums.ProficiencyLevel;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.*;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -19,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,8 +40,6 @@ public class ProfileExtractionService {
 
     @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
     private String groqApiUrl;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ProfileExtractionResponseDTO extractProfile(Long userId, String freeText) {
         User user = userRepository.findById(userId)
@@ -94,32 +92,11 @@ public class ProfileExtractionService {
                             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
                             String jsonContent = (String) message.get("content");
                             
-                            // Robust Jackson ObjectMapper Parsing
-                            JsonNode root = objectMapper.readTree(jsonContent);
-                            if (root.has("detectedSkills") && root.get("detectedSkills").isArray()) {
-                                for (JsonNode node : root.get("detectedSkills")) {
-                                    if (!node.asText().trim().isEmpty()) {
-                                        detectedSkillNames.add(node.asText().trim());
-                                    }
-                                }
+                            // Safe structured parsing of JSON response
+                            parseStructuredJson(jsonContent, detectedSkillNames, detectedProjects, validRoles);
+                            if (!detectedSkillNames.isEmpty()) {
+                                groqSuccess = true;
                             }
-                            if (root.has("careerInterest") && !root.get("careerInterest").isNull()) {
-                                String cand = root.get("careerInterest").asText().trim();
-                                for (String vr : validRoles) {
-                                    if (vr.equalsIgnoreCase(cand) || cand.toLowerCase().contains(vr.toLowerCase())) {
-                                        detectedCareerInterest = vr;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (root.has("projectsDetected") && root.get("projectsDetected").isArray()) {
-                                for (JsonNode node : root.get("projectsDetected")) {
-                                    if (!node.asText().trim().isEmpty()) {
-                                        detectedProjects.add(node.asText().trim());
-                                    }
-                                }
-                            }
-                            groqSuccess = true;
                         }
                     }
                 } catch (Exception e) {
@@ -173,6 +150,27 @@ public class ProfileExtractionService {
         resp.setProjectsDetected(detectedProjects);
         resp.setStatusMessage("AI Profile Analysis complete. Please review and confirm your skills before self-rating.");
         return resp;
+    }
+
+    private void parseStructuredJson(String json, Set<String> detectedSkills, List<String> projects, List<String> validRoles) {
+        if (json == null) return;
+        Pattern skillArrayPattern = Pattern.compile("\"detectedSkills\"\\s*:\\s*\\[(.*?)\\]", Pattern.DOTALL);
+        Matcher skillMatcher = skillArrayPattern.matcher(json);
+        if (skillMatcher.find()) {
+            Matcher itemMatcher = Pattern.compile("\"([^\"]+)\"").matcher(skillMatcher.group(1));
+            while (itemMatcher.find()) {
+                detectedSkills.add(itemMatcher.group(1).trim());
+            }
+        }
+
+        Pattern projArrayPattern = Pattern.compile("\"projectsDetected\"\\s*:\\s*\\[(.*?)\\]", Pattern.DOTALL);
+        Matcher projMatcher = projArrayPattern.matcher(json);
+        if (projMatcher.find()) {
+            Matcher itemMatcher = Pattern.compile("\"([^\"]+)\"").matcher(projMatcher.group(1));
+            while (itemMatcher.find()) {
+                projects.add(itemMatcher.group(1).trim());
+            }
+        }
     }
 
     public ProfileExtractionResponseDTO confirmProfile(Long userId, ProfileConfirmationRequestDTO req) {
