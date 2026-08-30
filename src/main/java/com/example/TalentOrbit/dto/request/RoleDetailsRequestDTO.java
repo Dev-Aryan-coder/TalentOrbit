@@ -13,42 +13,86 @@ public class RoleDetailsRequestDTO {
     private String cinNumber;
     private String sector;
     private String description;
+    private String websiteUrl;
+    private String verificationDocPath;
     private String department;
     private String designation;
+    private String employeeId;
+    private String bio;
+    private String state;
+    private String city;
     private String contactPerson;
     private String contactEmail;
+    private String naacGrade;
 
     public RoleDetailsRequestDTO() {}
+
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
     public String getInstitutionName() { return institutionName; }
     public void setInstitutionName(String institutionName) { this.institutionName = institutionName; }
+
     public String getAisheCode() { return aisheCode; }
     public void setAisheCode(String aisheCode) { this.aisheCode = aisheCode; }
+
     public String getBranch() { return branch; }
     public void setBranch(String branch) { this.branch = branch; }
+
     public Integer getGradYear() { return gradYear; }
     public void setGradYear(Integer gradYear) { this.gradYear = gradYear; }
+
     public Double getCgpa() { return cgpa; }
     public void setCgpa(Double cgpa) { this.cgpa = cgpa; }
+
     public String getTargetRole() { return targetRole; }
     public void setTargetRole(String targetRole) { this.targetRole = targetRole; }
+
     public String getCompanyName() { return companyName; }
     public void setCompanyName(String companyName) { this.companyName = companyName; }
+
     public String getCinNumber() { return cinNumber; }
     public void setCinNumber(String cinNumber) { this.cinNumber = cinNumber; }
+
     public String getSector() { return sector; }
     public void setSector(String sector) { this.sector = sector; }
+
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public String getWebsiteUrl() { return websiteUrl; }
+    public void setWebsiteUrl(String websiteUrl) { this.websiteUrl = websiteUrl; }
+
+    public String getVerificationDocPath() { return verificationDocPath; }
+    public void setVerificationDocPath(String verificationDocPath) { this.verificationDocPath = verificationDocPath; }
+
     public String getDepartment() { return department; }
     public void setDepartment(String department) { this.department = department; }
+
     public String getDesignation() { return designation; }
     public void setDesignation(String designation) { this.designation = designation; }
+
+    public String getEmployeeId() { return employeeId; }
+    public void setEmployeeId(String employeeId) { this.employeeId = employeeId; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
+
     public String getContactPerson() { return contactPerson; }
     public void setContactPerson(String contactPerson) { this.contactPerson = contactPerson; }
+
     public String getContactEmail() { return contactEmail; }
     public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
+
+    public String getNaacGrade() { return naacGrade; }
+    public void setNaacGrade(String naacGrade) { this.naacGrade = naacGrade; }
 }

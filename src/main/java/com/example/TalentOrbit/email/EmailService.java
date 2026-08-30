@@ -40,6 +40,17 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    public void sendRegistrationDecisionEmail(String toEmail, String roleName, String decision, String reason) {
+        String subject = "TalentOrbit: Registration Status Update (" + decision + ")";
+        String body = String.format(
+            "Dear User (%s),\n\nYour TalentOrbit account registration has been reviewed and marked as: %s.\n\n" +
+            "Admin Remarks: %s\n\n" +
+            "Best regards,\nTalentOrbit SuperAdmin Governance Team",
+            roleName, decision, reason != null ? reason : "No additional remarks"
+        );
+        sendEmail(toEmail, subject, body);
+    }
+
     public void sendInterviewScheduledEmail(String toEmail, String postingTitle, LocalDateTime scheduledAt, String meetingLink) {
         String subject = "TalentOrbit: Technical Interview Scheduled for " + postingTitle;
         String dateStr = scheduledAt != null ? scheduledAt.format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a")) : "TBD";
