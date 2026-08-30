@@ -1,6 +1,7 @@
 package com.example.TalentOrbit.service;
 
 import com.example.TalentOrbit.dto.request.RoadmapStepStatusUpdateDTO;
+import com.example.TalentOrbit.dto.response.CareerSuggestionResponseDTO;
 import com.example.TalentOrbit.dto.response.RoadmapStepResponseDTO;
 import com.example.TalentOrbit.entity.*;
 import com.example.TalentOrbit.enums.RoadmapStepStatus;
@@ -78,6 +79,47 @@ public class RoadmapService {
         }
 
         return generatedSteps;
+    }
+
+    public List<CareerSuggestionResponseDTO> getCareerSuggestions(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        List<StudentSkill> studentSkills = studentSkillRepository.findByUserId(userId);
+        Set<String> heldSkillNames = studentSkills.stream()
+                .map(s -> s.getSkill().getName().trim().toLowerCase())
+                .collect(Collectors.toSet());
+
+        List<RoleSkillTemplate> templates = roleSkillTemplateRepository.findAll();
+        List<CareerSuggestionResponseDTO> suggestions = new ArrayList<>();
+
+        for (RoleSkillTemplate template : templates) {
+            List<RoleSkillTemplateSkill> reqSkills = roleSkillTemplateSkillRepository.findByTemplate(template);
+            List<String> matched = new ArrayList<>();
+            List<String> missing = new ArrayList<>();
+
+            int totalWeight = 0;
+            int matchedWeight = 0;
+
+            for (RoleSkillTemplateSkill tss : reqSkills) {
+                String skName = tss.getSkill().getName().trim();
+                int weight = (tss.getWeight() != null && tss.getWeight() > 0) ? tss.getWeight() : 1;
+                totalWeight += weight;
+
+                if (heldSkillNames.contains(skName.toLowerCase())) {
+                    matchedWeight += weight;
+                    matched.add(skName);
+                } else {
+                    missing.add(skName);
+                }
+            }
+
+            int fit = totalWeight > 0 ? (int) Math.round(((double) matchedWeight / totalWeight) * 100.0) : 0;
+            suggestions.add(new CareerSuggestionResponseDTO(template.getRoleName(), template.getDescription(), fit, matched, missing));
+        }
+
+        suggestions.sort((a, b) -> Integer.compare(b.getFitPercent(), a.getFitPercent()));
+        return suggestions;
     }
 
     public RoadmapStepResponseDTO updateStepStatus(Long stepId, RoadmapStepStatusUpdateDTO req) {

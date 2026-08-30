@@ -7,6 +7,8 @@ import com.example.TalentOrbit.entity.*;
 import com.example.TalentOrbit.enums.ProficiencyLevel;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -17,8 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,6 +40,8 @@ public class ProfileExtractionService {
 
     @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
     private String groqApiUrl;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ProfileExtractionResponseDTO extractProfile(Long userId, String freeText) {
         User user = userRepository.findById(userId)
@@ -91,8 +93,32 @@ public class ProfileExtractionService {
                         if (choices != null && !choices.isEmpty()) {
                             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
                             String jsonContent = (String) message.get("content");
-                            parseGroqJsonResponse(jsonContent, detectedSkillNames, detectedProjects);
-                            detectedCareerInterest = parseCareerInterest(jsonContent, validRoles);
+                            
+                            // Robust Jackson ObjectMapper Parsing
+                            JsonNode root = objectMapper.readTree(jsonContent);
+                            if (root.has("detectedSkills") && root.get("detectedSkills").isArray()) {
+                                for (JsonNode node : root.get("detectedSkills")) {
+                                    if (!node.asText().trim().isEmpty()) {
+                                        detectedSkillNames.add(node.asText().trim());
+                                    }
+                                }
+                            }
+                            if (root.has("careerInterest") && !root.get("careerInterest").isNull()) {
+                                String cand = root.get("careerInterest").asText().trim();
+                                for (String vr : validRoles) {
+                                    if (vr.equalsIgnoreCase(cand) || cand.toLowerCase().contains(vr.toLowerCase())) {
+                                        detectedCareerInterest = vr;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (root.has("projectsDetected") && root.get("projectsDetected").isArray()) {
+                                for (JsonNode node : root.get("projectsDetected")) {
+                                    if (!node.asText().trim().isEmpty()) {
+                                        detectedProjects.add(node.asText().trim());
+                                    }
+                                }
+                            }
                             groqSuccess = true;
                         }
                     }
@@ -101,7 +127,7 @@ public class ProfileExtractionService {
                 }
             }
 
-            // Fallback / Hybrid Verification
+            // Generalized Fallback Keyword Matching
             if (!groqSuccess) {
                 String lowerText = freeText.toLowerCase();
                 for (Skill sk : masterSkills) {
@@ -109,19 +135,26 @@ public class ProfileExtractionService {
                         detectedSkillNames.add(sk.getName());
                     }
                 }
+
+                Set<String> stopWords = Set.of("developer", "engineer", "specialist", "lead", "architect", "and", "&", "the", "for");
                 for (RoleSkillTemplate rt : roleTemplates) {
-                    if (lowerText.contains(rt.getRoleName().toLowerCase()) || lowerText.contains("backend") && rt.getRoleName().contains("Backend")) {
-                        detectedCareerInterest = rt.getRoleName();
-                        break;
+                    String[] words = rt.getRoleName().toLowerCase().split("\\s+");
+                    for (String w : words) {
+                        if (!stopWords.contains(w) && w.length() > 3 && lowerText.contains(w)) {
+                            detectedCareerInterest = rt.getRoleName();
+                            break;
+                        }
                     }
+                    if (detectedCareerInterest != null) break;
                 }
+
                 if (lowerText.contains("project") || lowerText.contains("built") || lowerText.contains("developed") || lowerText.contains("website") || lowerText.contains("app")) {
                     detectedProjects.add("Self-reported development project mentioned in text");
                 }
             }
         }
 
-        // Defensive Check: Ensure only valid DB skills are returned
+        // Defensive Check against Master Skill DB table
         Map<String, Skill> skillLookup = masterSkills.stream()
                 .collect(Collectors.toMap(s -> s.getName().toLowerCase(), s -> s, (k1, k2) -> k1));
 
@@ -162,7 +195,7 @@ public class ProfileExtractionService {
                         StudentSkill ss = new StudentSkill();
                         ss.setUser(user);
                         ss.setSkill(skill);
-                        ss.setProficiency(ProficiencyLevel.BEGINNER); // Unverified until assessment
+                        ss.setProficiency(ProficiencyLevel.BEGINNER);
                         ss.setIsVerified(false);
                         studentSkillRepository.save(ss);
                     }
@@ -171,7 +204,6 @@ public class ProfileExtractionService {
             }
         }
 
-        // Auto-generate target roadmap steps for missing skills
         roadmapService.generateRoadmapForStudent(userId);
 
         ProfileExtractionResponseDTO resp = new ProfileExtractionResponseDTO();
@@ -180,49 +212,5 @@ public class ProfileExtractionService {
         resp.setCareerInterest(sd != null ? sd.getTargetRole() : req.getCareerInterest());
         resp.setStatusMessage("Profile skills confirmed. Proceed to self-rating and assessment to verify your skill proficiency.");
         return resp;
-    }
-
-    private void parseGroqJsonResponse(String json, Set<String> detectedSkills, List<String> detectedProjects) {
-        try {
-            // Regex parse skills
-            Pattern skillPat = Pattern.compile("\"detectedSkills\"\\s*:\\s*\\[([^\\]]*)\\]");
-            Matcher m = skillPat.matcher(json);
-            if (m.find()) {
-                String skillsBlock = m.group(1);
-                String[] tokens = skillsBlock.split(",");
-                for (String t : tokens) {
-                    String clean = t.replace("\"", "").trim();
-                    if (!clean.isEmpty()) detectedSkills.add(clean);
-                }
-            }
-
-            // Regex parse projects
-            Pattern projPat = Pattern.compile("\"projectsDetected\"\\s*:\\s*\\[([^\\]]*)\\]");
-            Matcher mp = projPat.matcher(json);
-            if (mp.find()) {
-                String projsBlock = mp.group(1);
-                String[] tokens = projsBlock.split(",");
-                for (String t : tokens) {
-                    String clean = t.replace("\"", "").trim();
-                    if (!clean.isEmpty()) detectedProjects.add(clean);
-                }
-            }
-        } catch (Exception ignored) {}
-    }
-
-    private String parseCareerInterest(String json, List<String> validRoles) {
-        try {
-            Pattern p = Pattern.compile("\"careerInterest\"\\s*:\\s*\"([^\"]+)\"");
-            Matcher m = p.matcher(json);
-            if (m.find()) {
-                String interest = m.group(1).trim();
-                for (String vr : validRoles) {
-                    if (vr.equalsIgnoreCase(interest) || interest.toLowerCase().contains(vr.toLowerCase())) {
-                        return vr;
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        return null;
     }
 }

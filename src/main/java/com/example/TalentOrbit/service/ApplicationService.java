@@ -78,6 +78,7 @@ public class ApplicationService {
             dto.setMatchScore(a.getMatchScore());
             dto.setMentorRating(a.getMentorRating());
             dto.setMentorFeedback(a.getMentorFeedback());
+            dto.setOfferedPackage(a.getOfferedPackage());
             return dto;
         }).collect(Collectors.toList());
     }
@@ -105,6 +106,7 @@ public class ApplicationService {
             dto.setMissingSkills(match.missingSkills);
             dto.setMentorRating(a.getMentorRating());
             dto.setMentorFeedback(a.getMentorFeedback());
+            dto.setOfferedPackage(a.getOfferedPackage());
             dtos.add(dto);
         }
 
@@ -119,9 +121,10 @@ public class ApplicationService {
         if (req.getStatus() != null) app.setStatus(req.getStatus());
         if (req.getMentorRating() != null) app.setMentorRating(req.getMentorRating());
         if (req.getMentorFeedback() != null) app.setMentorFeedback(req.getMentorFeedback());
+        if (req.getOfferedPackage() != null) app.setOfferedPackage(req.getOfferedPackage());
+
         Application saved = applicationRepository.save(app);
 
-        // Closing the Academic-Industry Loop: If COMPLETED and mentorRating >= 4.0, verify student's skills with SHA-256 hash
         if (saved.getStatus() == ApplicationStatus.COMPLETED && saved.getMentorRating() != null && saved.getMentorRating() >= 4.0) {
             List<PostingSkill> requiredSkills = postingSkillRepository.findByPosting(saved.getPosting());
             for (PostingSkill ps : requiredSkills) {
@@ -132,7 +135,6 @@ public class ApplicationService {
                 ss.setIsVerified(true);
                 ss.setLastAssessed(LocalDate.now());
 
-                // Compute tamper-evident SHA-256 hash
                 String raw = saved.getUser().getId() + ":" + ps.getSkill().getId() + ":" + saved.getMentorRating() + ":" + System.currentTimeMillis() + ":" + serverSecret;
                 ss.setVerificationHash(computeSha256(raw));
                 studentSkillRepository.save(ss);
@@ -151,6 +153,7 @@ public class ApplicationService {
         dto.setMatchScore(saved.getMatchScore());
         dto.setMentorRating(saved.getMentorRating());
         dto.setMentorFeedback(saved.getMentorFeedback());
+        dto.setOfferedPackage(saved.getOfferedPackage());
         return dto;
     }
 

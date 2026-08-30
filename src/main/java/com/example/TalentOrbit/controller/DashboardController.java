@@ -16,8 +16,10 @@ public class DashboardController {
     @Autowired private DashboardService dashboardService;
 
     @GetMapping("/dashboard/stats")
-    public ResponseEntity<DashboardStatsResponseDTO> getStats(@RequestParam(defaultValue = "STUDENT") Role role) {
-        return ResponseEntity.ok(dashboardService.getStatsForRole(role));
+    public ResponseEntity<DashboardStatsResponseDTO> getStats(
+            @RequestParam(defaultValue = "STUDENT") Role role,
+            @RequestParam(required = false) Long userId) {
+        return ResponseEntity.ok(dashboardService.getStatsForRole(role, userId));
     }
 
     @GetMapping("/admin/skill-gaps")

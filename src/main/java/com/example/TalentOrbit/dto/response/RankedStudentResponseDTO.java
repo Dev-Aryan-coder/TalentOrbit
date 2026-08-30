@@ -9,6 +9,7 @@ public class RankedStudentResponseDTO {
     private String branch;
     private Double cgpa;
     private Integer matchScore;
+    private Boolean hasAssessmentData;
     private List<String> topSkills;
     private List<String> matchedSkills;
     private List<String> missingSkills;
@@ -32,6 +33,9 @@ public class RankedStudentResponseDTO {
 
     public Integer getMatchScore() { return matchScore; }
     public void setMatchScore(Integer matchScore) { this.matchScore = matchScore; }
+
+    public Boolean getHasAssessmentData() { return hasAssessmentData; }
+    public void setHasAssessmentData(Boolean hasAssessmentData) { this.hasAssessmentData = hasAssessmentData; }
 
     public List<String> getTopSkills() { return topSkills; }
     public void setTopSkills(List<String> topSkills) { this.topSkills = topSkills; }

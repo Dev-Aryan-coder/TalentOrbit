@@ -62,10 +62,12 @@ public class StudentSearchController {
                     .map(ss -> ss.getSkill().getName())
                     .collect(Collectors.toList());
 
+            boolean hasAssessmentData = (sd.getEmployabilityScore() != null && sd.getEmployabilityScore() > 0) || studentSkills.stream().anyMatch(StudentSkill::getIsVerified);
+
             List<String> matched = new ArrayList<>();
             List<String> missing = new ArrayList<>();
 
-            int computedScore = sd.getEmployabilityScore() != null ? sd.getEmployabilityScore() : 80;
+            int computedScore = hasAssessmentData ? sd.getEmployabilityScore() : 0;
             if (filter != null && filter.getRequiredSkills() != null && !filter.getRequiredSkills().isEmpty()) {
                 Set<String> studentSkillSet = realSkills.stream()
                         .map(String::toLowerCase)
@@ -90,7 +92,8 @@ public class StudentSearchController {
             dto.setBranch(sd.getBranch());
             dto.setCgpa(sd.getCgpa());
             dto.setMatchScore(computedScore);
-            dto.setTopSkills(realSkills.isEmpty() ? Arrays.asList("Profile Setup Pending") : realSkills);
+            dto.setHasAssessmentData(hasAssessmentData);
+            dto.setTopSkills(realSkills.isEmpty() ? Collections.singletonList("Profile Setup Pending") : realSkills);
             dto.setMatchedSkills(matched);
             dto.setMissingSkills(missing);
             results.add(dto);

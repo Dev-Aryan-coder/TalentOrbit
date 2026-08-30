@@ -1,13 +1,16 @@
 package com.example.TalentOrbit.service;
 
-import com.example.TalentOrbit.dto.request.FlagCreateDTO;
 import com.example.TalentOrbit.dto.request.FlagDecisionDTO;
 import com.example.TalentOrbit.dto.response.FlagResponseDTO;
 import com.example.TalentOrbit.entity.Flag;
+import com.example.TalentOrbit.entity.Posting;
 import com.example.TalentOrbit.entity.User;
+import com.example.TalentOrbit.enums.FlagItemType;
 import com.example.TalentOrbit.enums.FlagStatus;
+import com.example.TalentOrbit.enums.Role;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.FlagRepository;
+import com.example.TalentOrbit.repository.PostingRepository;
 import com.example.TalentOrbit.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,28 +20,11 @@ import java.util.stream.Collectors;
 
 @Service
 public class ModerationService {
+
     @Autowired private FlagRepository flagRepository;
+    @Autowired private PostingRepository postingRepository;
     @Autowired private UserRepository userRepository;
-
-    public FlagResponseDTO flagItem(FlagCreateDTO req) {
-        User user = (req.getReportedByUserId() != null) ? userRepository.findById(req.getReportedByUserId()).orElse(null) : null;
-        Flag flag = new Flag();
-        flag.setReportedBy(user);
-        flag.setItemType(req.getItemType());
-        flag.setItemId(req.getItemId());
-        flag.setReason(req.getReason());
-        flag.setStatus(FlagStatus.PENDING);
-        Flag saved = flagRepository.save(flag);
-
-        FlagResponseDTO dto = new FlagResponseDTO();
-        dto.setId(saved.getId());
-        dto.setItemType(saved.getItemType());
-        dto.setItemId(saved.getItemId());
-        dto.setReason(saved.getReason());
-        dto.setStatus(saved.getStatus());
-        dto.setCreatedAt(saved.getCreatedAt());
-        return dto;
-    }
+    @Autowired private AuditLogService auditLogService;
 
     public List<FlagResponseDTO> getPendingFlags() {
         return flagRepository.findByStatus(FlagStatus.PENDING).stream().map(f -> {
@@ -46,6 +32,7 @@ public class ModerationService {
             dto.setId(f.getId());
             dto.setItemType(f.getItemType());
             dto.setItemId(f.getItemId());
+            dto.setReportedByEmail(f.getReportedBy().getEmail());
             dto.setReason(f.getReason());
             dto.setStatus(f.getStatus());
             dto.setCreatedAt(f.getCreatedAt());
@@ -53,10 +40,24 @@ public class ModerationService {
         }).collect(Collectors.toList());
     }
 
-    public void decideFlag(Long flagId, FlagDecisionDTO req) {
-        Flag flag = flagRepository.findById(flagId)
+    public void decideFlag(FlagDecisionDTO req) {
+        Flag flag = flagRepository.findById(req.getFlagId())
                 .orElseThrow(() -> new ResourceNotFoundException("Flag not found"));
-        flag.setStatus(req.getStatus());
+        flag.setStatus(req.getDecision());
         flagRepository.save(flag);
+
+        // Deactivate underlying content if decision is REMOVED
+        if (req.getDecision() == FlagStatus.REMOVED && flag.getItemType() == FlagItemType.POSTING) {
+            Posting posting = postingRepository.findById(flag.getItemId()).orElse(null);
+            if (posting != null) {
+                posting.setIsActive(false);
+                postingRepository.save(posting);
+            }
+        }
+
+        User admin = userRepository.findAll().stream().filter(u -> u.getRole() == Role.SUPERADMIN).findFirst().orElse(null);
+        if (admin != null) {
+            auditLogService.log(admin, "MODERATION_FLAG_" + req.getDecision(), "FLAG", flag.getId(), "127.0.0.1");
+        }
     }
 }
