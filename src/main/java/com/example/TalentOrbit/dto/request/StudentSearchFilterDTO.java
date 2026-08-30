@@ -8,16 +8,25 @@ public class StudentSearchFilterDTO {
     private String branch;
     private Integer minGradYear;
     private Double minCgpa;
+    private Integer minEmployabilityScore;
 
     public StudentSearchFilterDTO() {}
+
     public Long getPostingId() { return postingId; }
     public void setPostingId(Long postingId) { this.postingId = postingId; }
+
     public List<String> getRequiredSkills() { return requiredSkills; }
     public void setRequiredSkills(List<String> requiredSkills) { this.requiredSkills = requiredSkills; }
+
     public String getBranch() { return branch; }
     public void setBranch(String branch) { this.branch = branch; }
+
     public Integer getMinGradYear() { return minGradYear; }
     public void setMinGradYear(Integer minGradYear) { this.minGradYear = minGradYear; }
+
     public Double getMinCgpa() { return minCgpa; }
     public void setMinCgpa(Double minCgpa) { this.minCgpa = minCgpa; }
+
+    public Integer getMinEmployabilityScore() { return minEmployabilityScore; }
+    public void setMinEmployabilityScore(Integer minEmployabilityScore) { this.minEmployabilityScore = minEmployabilityScore; }
 }
