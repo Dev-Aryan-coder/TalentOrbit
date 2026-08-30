@@ -11,5 +11,6 @@ import java.util.List;
 @Repository
 public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     List<Portfolio> findByUser(User user);
+    List<Portfolio> findByUserAndItemType(User user, PortfolioItemType itemType);
     List<Portfolio> findByUserIdAndItemType(Long userId, PortfolioItemType itemType);
 }
