@@ -8,20 +8,30 @@ public class AcademicianInterestResponseDTO {
     private Long postingId;
     private String postingTitle;
     private String postingType;
+    private String companyName;
     private CollaborationStatus status;
     private LocalDateTime expressedAt;
 
     public AcademicianInterestResponseDTO() {}
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
     public Long getPostingId() { return postingId; }
     public void setPostingId(Long postingId) { this.postingId = postingId; }
+
     public String getPostingTitle() { return postingTitle; }
     public void setPostingTitle(String postingTitle) { this.postingTitle = postingTitle; }
+
     public String getPostingType() { return postingType; }
     public void setPostingType(String postingType) { this.postingType = postingType; }
+
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
+
     public CollaborationStatus getStatus() { return status; }
     public void setStatus(CollaborationStatus status) { this.status = status; }
+
     public LocalDateTime getExpressedAt() { return expressedAt; }
     public void setExpressedAt(LocalDateTime expressedAt) { this.expressedAt = expressedAt; }
 }
