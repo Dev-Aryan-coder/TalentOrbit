@@ -3,6 +3,7 @@ package com.example.TalentOrbit.service;
 import com.example.TalentOrbit.dto.request.AiAssessmentRequestDTO;
 import com.example.TalentOrbit.dto.request.AssessmentQuestionAnswerDTO;
 import com.example.TalentOrbit.dto.response.AiAssessmentResponseDTO;
+import com.example.TalentOrbit.dto.response.QuestionResponseDTO;
 import com.example.TalentOrbit.entity.*;
 import com.example.TalentOrbit.enums.ProficiencyLevel;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
@@ -40,6 +41,19 @@ public class AiAssessmentService {
 
     @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
     private String groqApiUrl;
+
+    public List<QuestionResponseDTO> getQuestionsForSkill(Long skillId) {
+        List<Question> questions = questionRepository.findBySkillId(skillId);
+        return questions.stream().map(q -> new QuestionResponseDTO(
+                q.getId(),
+                q.getTopic(),
+                q.getText(),
+                q.getOptionA(),
+                q.getOptionB(),
+                q.getOptionC(),
+                q.getOptionD()
+        )).collect(Collectors.toList());
+    }
 
     public AiAssessmentResponseDTO evaluateAssessmentWithAi(AiAssessmentRequestDTO req) {
         User user = userRepository.findById(req.getUserId())
@@ -92,14 +106,12 @@ public class AiAssessmentService {
             gapCategory = "GOOD_ALIGNMENT (Realistic self-awareness of skill proficiency)";
         }
 
-        // Save Assessment record in DB
         Assessment assessment = new Assessment();
         assessment.setUser(user);
         assessment.setSkill(skill);
         assessment.setScore(actualPercentage);
         assessmentRepository.save(assessment);
 
-        // Update StudentSkill verified flag
         Optional<StudentSkill> optSkill = studentSkillRepository.findByUserAndSkill(user, skill);
         StudentSkill studentSkill = optSkill.orElse(new StudentSkill());
         studentSkill.setUser(user);
@@ -117,17 +129,14 @@ public class AiAssessmentService {
         }
         studentSkillRepository.save(studentSkill);
 
-        // Update Employability Score
         studentDetails.setEmployabilityScore(Math.min(98, Math.max(50, (studentDetails.getEmployabilityScore() + actualPercentage) / 2)));
         studentDetailsRepository.save(studentDetails);
 
-        // Trigger Badges for ASSESSMENT_MASTER and SKILL_VERIFIED
         badgeService.checkAndAwardBadges(user.getId(), "ASSESSMENT_COMPLETED");
         if (studentSkill.getIsVerified()) {
             badgeService.checkAndAwardBadges(user.getId(), "SKILL_VERIFIED");
         }
 
-        // Generate AI Action Plan via Groq Qwen
         String aiExplanation = generateAiGapAnalysis(
                 skill.getName(),
                 studentDetails.getTargetRole(),

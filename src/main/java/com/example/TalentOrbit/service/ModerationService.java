@@ -1,5 +1,6 @@
 package com.example.TalentOrbit.service;
 
+import com.example.TalentOrbit.dto.request.FlagCreateDTO;
 import com.example.TalentOrbit.dto.request.FlagDecisionDTO;
 import com.example.TalentOrbit.dto.response.FlagResponseDTO;
 import com.example.TalentOrbit.entity.Flag;
@@ -26,6 +27,29 @@ public class ModerationService {
     @Autowired private UserRepository userRepository;
     @Autowired private AuditLogService auditLogService;
 
+    public FlagResponseDTO flagItem(FlagCreateDTO req) {
+        User reportedBy = userRepository.findById(req.getReportedByUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Reporting user not found"));
+
+        Flag flag = new Flag();
+        flag.setReportedBy(reportedBy);
+        flag.setItemType(req.getItemType());
+        flag.setItemId(req.getItemId());
+        flag.setReason(req.getReason());
+        flag.setStatus(FlagStatus.PENDING);
+        Flag saved = flagRepository.save(flag);
+
+        FlagResponseDTO dto = new FlagResponseDTO();
+        dto.setId(saved.getId());
+        dto.setItemType(saved.getItemType());
+        dto.setItemId(saved.getItemId());
+        dto.setReportedByEmail(reportedBy.getEmail());
+        dto.setReason(saved.getReason());
+        dto.setStatus(saved.getStatus());
+        dto.setCreatedAt(saved.getCreatedAt());
+        return dto;
+    }
+
     public List<FlagResponseDTO> getPendingFlags() {
         return flagRepository.findByStatus(FlagStatus.PENDING).stream().map(f -> {
             FlagResponseDTO dto = new FlagResponseDTO();
@@ -40,13 +64,12 @@ public class ModerationService {
         }).collect(Collectors.toList());
     }
 
-    public void decideFlag(FlagDecisionDTO req) {
-        Flag flag = flagRepository.findById(req.getFlagId())
+    public void decideFlag(Long flagId, FlagDecisionDTO req) {
+        Flag flag = flagRepository.findById(flagId)
                 .orElseThrow(() -> new ResourceNotFoundException("Flag not found"));
         flag.setStatus(req.getDecision());
         flagRepository.save(flag);
 
-        // Deactivate underlying content if decision is REMOVED
         if (req.getDecision() == FlagStatus.REMOVED && flag.getItemType() == FlagItemType.POSTING) {
             Posting posting = postingRepository.findById(flag.getItemId()).orElse(null);
             if (posting != null) {
@@ -59,5 +82,9 @@ public class ModerationService {
         if (admin != null) {
             auditLogService.log(admin, "MODERATION_FLAG_" + req.getDecision(), "FLAG", flag.getId(), "127.0.0.1");
         }
+    }
+
+    public void decideFlag(FlagDecisionDTO req) {
+        decideFlag(req.getFlagId(), req);
     }
 }
