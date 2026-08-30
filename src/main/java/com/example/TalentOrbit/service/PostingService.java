@@ -1,13 +1,17 @@
 package com.example.TalentOrbit.service;
 
 import com.example.TalentOrbit.dto.request.PostingCreateDTO;
+import com.example.TalentOrbit.dto.request.PostingSkillDTO;
+import com.example.TalentOrbit.dto.request.SkillPreviewRequestDTO;
 import com.example.TalentOrbit.dto.response.PostingResponseDTO;
 import com.example.TalentOrbit.dto.response.SkillPreviewResponseDTO;
 import com.example.TalentOrbit.entity.*;
 import com.example.TalentOrbit.enums.FlagItemType;
 import com.example.TalentOrbit.enums.FlagStatus;
+import com.example.TalentOrbit.enums.PostingType;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +28,14 @@ public class PostingService {
     @Autowired private StudentSkillRepository studentSkillRepository;
     @Autowired private PlatformSettingRepository platformSettingRepository;
     @Autowired private FlagRepository flagRepository;
+    @Autowired private AuditLogService auditLogService;
+
+    public SkillPreviewResponseDTO previewMatchCount(SkillPreviewRequestDTO req) {
+        if (req == null || req.getSkillIds() == null || req.getSkillIds().isEmpty()) {
+            return new SkillPreviewResponseDTO(0, 0);
+        }
+        return countMatchingStudents(req.getSkillIds());
+    }
 
     public SkillPreviewResponseDTO countMatchingStudents(List<Long> skillIds) {
         if (skillIds == null || skillIds.isEmpty()) {
@@ -53,7 +65,7 @@ public class PostingService {
         return new SkillPreviewResponseDTO(allMatch, anyMatch);
     }
 
-    public PostingResponseDTO createPosting(PostingCreateDTO req) {
+    public PostingResponseDTO createPosting(PostingCreateDTO req, HttpServletRequest request) {
         User user = userRepository.findById(req.getPostedByUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -85,6 +97,22 @@ public class PostingService {
                     skillNames.add(skill.getName());
                 }
             }
+        } else if (req.getRequiredSkills() != null) {
+            for (PostingSkillDTO psDto : req.getRequiredSkills()) {
+                Skill skill = (psDto.getSkillId() != null) 
+                        ? skillRepository.findById(psDto.getSkillId()).orElse(null) 
+                        : (psDto.getSkillName() != null ? skillRepository.findByName(psDto.getSkillName()).orElse(null) : null);
+                if (skill != null) {
+                    PostingSkill ps = new PostingSkill();
+                    ps.setPosting(saved);
+                    ps.setSkill(skill);
+                    ps.setIsMandatory(psDto.getIsMandatory() != null ? psDto.getIsMandatory() : true);
+                    int weight = (psDto.getWeight() != null && psDto.getWeight() >= 1 && psDto.getWeight() <= 5) ? psDto.getWeight() : 3;
+                    ps.setWeight(weight);
+                    postingSkillRepository.save(ps);
+                    skillNames.add(skill.getName());
+                }
+            }
         }
 
         // Auto-flag below minimum stipend policy
@@ -106,6 +134,10 @@ public class PostingService {
             }
         }
 
+        if (request != null) {
+            auditLogService.log(user, "POSTING_CREATED", "POSTING", saved.getId(), request);
+        }
+
         PostingResponseDTO dto = new PostingResponseDTO();
         dto.setId(saved.getId());
         dto.setPostedByUserId(user.getId());
@@ -120,21 +152,37 @@ public class PostingService {
         return dto;
     }
 
+    public PostingResponseDTO createPosting(PostingCreateDTO req) {
+        return createPosting(req, (HttpServletRequest) null);
+    }
+
+    public List<PostingResponseDTO> getActivePostings() {
+        return getAllActivePostings();
+    }
+
     public List<PostingResponseDTO> getAllActivePostings() {
-        return postingRepository.findByIsActiveTrue().stream().map(p -> {
-            PostingResponseDTO dto = new PostingResponseDTO();
-            dto.setId(p.getId());
-            dto.setPostedByUserId(p.getPostedBy().getId());
-            dto.setTitle(p.getTitle());
-            dto.setPostingType(p.getPostingType());
-            dto.setDescription(p.getDescription());
-            dto.setLocation(p.getLocation());
-            dto.setStipend(p.getStipend());
-            dto.setDeadline(p.getDeadline());
-            dto.setIsActive(p.getIsActive());
-            List<PostingSkill> skills = postingSkillRepository.findByPosting(p);
-            dto.setRequiredSkills(skills.stream().map(ps -> ps.getSkill().getName()).collect(Collectors.toList()));
-            return dto;
-        }).collect(Collectors.toList());
+        return postingRepository.findByIsActiveTrue().stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    public List<PostingResponseDTO> getPostingsByType(PostingType type) {
+        return postingRepository.findByPostingTypeAndIsActiveTrue(type).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    private PostingResponseDTO toDTO(Posting p) {
+        PostingResponseDTO dto = new PostingResponseDTO();
+        dto.setId(p.getId());
+        dto.setPostedByUserId(p.getPostedBy().getId());
+        dto.setTitle(p.getTitle());
+        dto.setPostingType(p.getPostingType());
+        dto.setDescription(p.getDescription());
+        dto.setLocation(p.getLocation());
+        dto.setStipend(p.getStipend());
+        dto.setDeadline(p.getDeadline());
+        dto.setIsActive(p.getIsActive());
+        List<PostingSkill> skills = postingSkillRepository.findByPosting(p);
+        dto.setRequiredSkills(skills.stream().map(ps -> ps.getSkill().getName()).collect(Collectors.toList()));
+        return dto;
     }
 }

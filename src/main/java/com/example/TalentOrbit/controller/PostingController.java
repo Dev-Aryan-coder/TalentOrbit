@@ -44,7 +44,7 @@ public class PostingController {
 
     @GetMapping("/industry-trainings")
     public ResponseEntity<List<PostingResponseDTO>> getTrainings() {
-        return ResponseEntity.ok(postingService.getPostingsByType(PostingType.INDUSTRY_TRAINING));
+        return ResponseEntity.ok(postingService.getPostingsByType(PostingType.TRAINING));
     }
 
     @GetMapping("/research-grants")

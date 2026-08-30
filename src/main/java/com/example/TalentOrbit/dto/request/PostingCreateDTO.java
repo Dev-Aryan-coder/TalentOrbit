@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public class PostingCreateDTO {
     @NotNull(message = "PostedBy User ID is required")
@@ -21,8 +22,10 @@ public class PostingCreateDTO {
     private String description;
 
     private String location;
-    private BigDecimal stipend;
+    private String stipend;
+    private BigDecimal stipendAmount;
     private LocalDate deadline;
+    private Map<Long, Integer> skillWeights;
     private List<PostingSkillDTO> requiredSkills;
 
     public PostingCreateDTO() {}
@@ -42,11 +45,17 @@ public class PostingCreateDTO {
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
-    public BigDecimal getStipend() { return stipend; }
-    public void setStipend(BigDecimal stipend) { this.stipend = stipend; }
+    public String getStipend() { return stipend; }
+    public void setStipend(String stipend) { this.stipend = stipend; }
+
+    public BigDecimal getStipendAmount() { return stipendAmount; }
+    public void setStipendAmount(BigDecimal stipendAmount) { this.stipendAmount = stipendAmount; }
 
     public LocalDate getDeadline() { return deadline; }
     public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
+
+    public Map<Long, Integer> getSkillWeights() { return skillWeights; }
+    public void setSkillWeights(Map<Long, Integer> skillWeights) { this.skillWeights = skillWeights; }
 
     public List<PostingSkillDTO> getRequiredSkills() { return requiredSkills; }
     public void setRequiredSkills(List<PostingSkillDTO> requiredSkills) { this.requiredSkills = requiredSkills; }
