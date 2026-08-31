@@ -34,10 +34,10 @@ public class ChatbotService {
     @Autowired private StudentSkillRepository studentSkillRepository;
     @Autowired private RestTemplate restTemplate;
 
-    @Value("${groq.api.key:}")
+    @Value("${groq.chatbot.api.key:${groq.api.key:gsk_default_demo_key}}")
     private String groqApiKey;
 
-    @Value("${groq.model:qwen/qwen3.8-27b}")
+    @Value("${groq.chatbot.model:${groq.model:qwen/qwen3.8-27b}}")
     private String groqModel;
 
     @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
@@ -197,3 +197,4 @@ public class ChatbotService {
         return "I'm ready to help with your TalentOrbit journey. What would you like to explore next?";
     }
 }
+

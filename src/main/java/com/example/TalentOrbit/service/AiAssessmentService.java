@@ -35,10 +35,10 @@ public class AiAssessmentService {
     @Autowired private BadgeService badgeService;
     @Autowired private RestTemplate restTemplate;
 
-    @Value("${groq.api.key:gsk_default_demo_key}")
+    @Value("${groq.assessment.api.key:${groq.api.key:gsk_default_demo_key}}")
     private String groqApiKey;
 
-    @Value("${groq.model:qwen/qwen3.8-27b}")
+    @Value("${groq.assessment.model:${groq.model:qwen/qwen3.8-27b}}")
     private String groqModel;
 
     @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
@@ -341,3 +341,4 @@ public class AiAssessmentService {
         return sb.toString();
     }
 }
+
