@@ -8,6 +8,8 @@ import com.example.TalentOrbit.entity.*;
 import com.example.TalentOrbit.enums.ProficiencyLevel;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -43,7 +45,16 @@ public class AiAssessmentService {
     private String groqApiUrl;
 
     public List<QuestionResponseDTO> getQuestionsForSkill(Long skillId) {
+        Skill skill = skillRepository.findById(skillId)
+                .orElseThrow(() -> new ResourceNotFoundException("Skill not found with ID: " + skillId));
+
         List<Question> questions = questionRepository.findBySkillId(skillId);
+
+        // Dynamic On-Demand Question Generation for ANY IT Topic if not in DB
+        if (questions == null || questions.isEmpty()) {
+            questions = generateAndSaveQuestionsForSkill(skill);
+        }
+
         return questions.stream().map(q -> new QuestionResponseDTO(
                 q.getId(),
                 q.getTopic(),
@@ -55,26 +66,133 @@ public class AiAssessmentService {
         )).collect(Collectors.toList());
     }
 
+    private List<Question> generateAndSaveQuestionsForSkill(Skill skill) {
+        List<Question> generatedList = new ArrayList<>();
+
+        if (groqApiKey != null && !groqApiKey.startsWith("gsk_default") && !groqApiKey.trim().isEmpty()) {
+            try {
+                String systemPrompt = "You are a technical assessment architect. Return ONLY a valid JSON array of 3 distinct, topic-tagged MCQ questions for the requested skill. Format:\n" +
+                        "[{\"topic\":\"TopicName\",\"text\":\"Question text?\",\"optionA\":\"...\",\"optionB\":\"...\",\"optionC\":\"...\",\"optionD\":\"...\",\"correctOption\":\"A|B|C|D\",\"explanation\":\"...\"}]";
+                
+                String userPrompt = "Generate 3 intermediate-to-advanced technical diagnostic MCQ questions for the skill: " + skill.getName();
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.setBearerAuth(groqApiKey);
+
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("model", groqModel);
+                requestBody.put("temperature", 0.2);
+
+                List<Map<String, String>> messages = new ArrayList<>();
+                messages.add(Map.of("role", "system", "content", systemPrompt));
+                messages.add(Map.of("role", "user", "content", userPrompt));
+                requestBody.put("messages", messages);
+
+                HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+                ResponseEntity<Map> response = restTemplate.postForEntity(groqApiUrl, entity, Map.class);
+
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+                    if (choices != null && !choices.isEmpty()) {
+                        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                        String content = (String) message.get("content");
+
+                        ObjectMapper mapper = new ObjectMapper();
+                        String cleanJson = content.trim();
+                        if (cleanJson.contains("[")) {
+                            cleanJson = cleanJson.substring(cleanJson.indexOf("["), cleanJson.lastIndexOf("]") + 1);
+                        }
+                        JsonNode rootArray = mapper.readTree(cleanJson);
+                        if (rootArray.isArray()) {
+                            for (JsonNode node : rootArray) {
+                                Question q = new Question();
+                                q.setSkill(skill);
+                                q.setTopic(node.path("topic").asText("Core Concepts"));
+                                q.setText(node.path("text").asText());
+                                q.setOptionA(node.path("optionA").asText());
+                                q.setOptionB(node.path("optionB").asText());
+                                q.setOptionC(node.path("optionC").asText());
+                                q.setOptionD(node.path("optionD").asText());
+                                q.setCorrectOption(node.path("correctOption").asText("A"));
+                                q.setExplanation(node.path("explanation").asText("Core technical concept in " + skill.getName()));
+                                generatedList.add(questionRepository.save(q));
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Dynamic Question Generation notice: " + e.getMessage());
+            }
+        }
+
+        // Deterministic Fallback if AI is offline
+        if (generatedList.isEmpty()) {
+            Question q1 = new Question();
+            q1.setSkill(skill);
+            q1.setTopic("Fundamentals & Architecture");
+            q1.setText("What is the primary architectural principle and best practice when building solutions with " + skill.getName() + "?");
+            q1.setOptionA("Modular separation of concerns and high cohesion");
+            q1.setOptionB("Monolithic tightly-coupled components");
+            q1.setOptionC("Direct hardcoded database connections in UI");
+            q1.setOptionD("Ignoring exception boundaries");
+            q1.setCorrectOption("A");
+            q1.setExplanation("Modular separation of concerns promotes maintainability and scalability in " + skill.getName() + ".");
+            generatedList.add(questionRepository.save(q1));
+
+            Question q2 = new Question();
+            q2.setSkill(skill);
+            q2.setTopic("Performance & Optimization");
+            q2.setText("How do you prevent memory leaks and performance bottlenecks in " + skill.getName() + "?");
+            q2.setOptionA("By increasing CPU frequency indefinitely");
+            q2.setOptionB("Proper lifecycle cleanup, resource management, and asynchronous non-blocking I/O");
+            q2.setOptionC("Disabling garbage collection and error logs");
+            q2.setOptionD("Using global static variables everywhere");
+            q2.setCorrectOption("B");
+            q2.setExplanation("Resource cleanup and asynchronous handling are critical for high throughput in " + skill.getName() + ".");
+            generatedList.add(questionRepository.save(q2));
+
+            Question q3 = new Question();
+            q3.setSkill(skill);
+            q3.setTopic("Security & Resilience");
+            q3.setText("What is standard practice for securing data and handling failures in " + skill.getName() + "?");
+            q3.setOptionA("Input validation, least-privilege access, and circuit-breaker resilience");
+            q3.setOptionB("Exposing internal stack traces to users");
+            q3.setOptionC("Storing plain-text secrets in code repositories");
+            q3.setOptionD("Bypassing validation layers");
+            q3.setCorrectOption("A");
+            q3.setExplanation("Defensive programming, input validation, and least privilege are fundamental in " + skill.getName() + ".");
+            generatedList.add(questionRepository.save(q3));
+        }
+
+        return generatedList;
+    }
+
     public AiAssessmentResponseDTO evaluateAssessmentWithAi(AiAssessmentRequestDTO req) {
         User user = userRepository.findById(req.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         Skill skill = skillRepository.findById(req.getSkillId())
                 .orElseThrow(() -> new ResourceNotFoundException("Skill not found"));
+
         StudentDetails studentDetails = studentDetailsRepository.findByUser(user)
-                .orElseThrow(() -> new ResourceNotFoundException("Student details not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found"));
 
         List<Question> questions = questionRepository.findBySkillId(skill.getId());
-        Map<Long, Question> questionMap = questions.stream().collect(Collectors.toMap(Question::getId, q -> q));
+        Map<Long, Question> questionMap = questions.stream()
+                .collect(Collectors.toMap(Question::getId, q -> q));
 
-        int totalQuestions = req.getAnswers().size();
+        int totalQuestions = (req.getAnswers() != null) ? req.getAnswers().size() : 0;
         int totalCorrect = 0;
         Map<String, Integer> topicTotal = new HashMap<>();
         Map<String, Integer> topicCorrect = new HashMap<>();
 
-        for (AssessmentQuestionAnswerDTO ans : req.getAnswers()) {
-            Question q = questionMap.get(ans.getQuestionId());
-            if (q != null) {
-                String topic = q.getTopic() != null ? q.getTopic() : "General";
+        if (req.getAnswers() != null) {
+            for (AssessmentQuestionAnswerDTO ans : req.getAnswers()) {
+                Question q = questionMap.get(ans.getQuestionId());
+                if (q == null) continue;
+
+                String topic = q.getTopic();
                 topicTotal.put(topic, topicTotal.getOrDefault(topic, 0) + 1);
 
                 if (q.getCorrectOption().trim().equalsIgnoreCase(ans.getSelectedOption().trim())) {
@@ -216,10 +334,10 @@ public class AiAssessmentService {
         }
         sb.append("\n#### Actionable 5-Step Learning Roadmap:\n");
         sb.append(String.format("1. Revise fundamental syntax and optimization patterns for %s.\n", skillName));
-        sb.append("2. Practice 15+ complex multi-condition queries and join scenarios.\n");
-        sb.append("3. Review indexing, partition strategies, and query execution plans.\n");
+        sb.append("2. Practice 15+ complex multi-condition scenarios.\n");
+        sb.append("3. Review performance, security best practices, and execution models.\n");
         sb.append("4. Retake the TalentOrbit diagnostic assessment to verify 80%+ benchmark.\n");
-        sb.append("5. Build a verified portfolio project demonstrating end-to-end database integration.\n");
+        sb.append("5. Build a verified portfolio project demonstrating end-to-end implementation.\n");
         return sb.toString();
     }
 }
