@@ -380,4 +380,38 @@ public class AiAssessmentService {
         }
         return "LANGUAGE";
     }
+
+    public List<QuestionResponseDTO> getQuestionsByTechType(TechType techType) {
+        return questionRepository.findByTechType(techType).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<QuestionResponseDTO> getQuestionsByLanguage(String language) {
+        return questionRepository.findByLanguageIgnoreCase(language).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<QuestionResponseDTO> getQuestionsByFramework(String framework) {
+        return questionRepository.findByFrameworkIgnoreCase(framework).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private QuestionResponseDTO mapToDTO(Question q) {
+        return new QuestionResponseDTO(
+                q.getId(),
+                q.getTopic(),
+                q.getText(),
+                q.getOptionA(),
+                q.getOptionB(),
+                q.getOptionC(),
+                q.getOptionD(),
+                q.getLanguage(),
+                q.getFramework(),
+                q.getTechType(),
+                q.getTechName()
+        );
+    }
 }
