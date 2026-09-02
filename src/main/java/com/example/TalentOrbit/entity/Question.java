@@ -1,5 +1,6 @@
 package com.example.TalentOrbit.entity;
 
+import com.example.TalentOrbit.enums.TechType;
 import jakarta.persistence.*;
 
 @Entity
@@ -14,7 +15,7 @@ public class Question {
     private Skill skill;
 
     @Column(nullable = false)
-    private String topic; // e.g. "JOIN", "GROUP BY", "Subqueries", "Virtual Threads", etc.
+    private String topic; // e.g. "JOIN", "Virtual Threads", "Hooks", "Docker Compose"
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String text;
@@ -36,6 +37,19 @@ public class Question {
 
     @Column(columnDefinition = "TEXT")
     private String explanation;
+
+    @Column(name = "language", length = 100)
+    private String language; // e.g. "Java", "Python", "JavaScript", "TypeScript", "SQL", "Go", "Rust"
+
+    @Column(name = "framework", length = 100)
+    private String framework; // e.g. "Spring Boot", "React", "Next.js", "Django", "Express", "Core"
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tech_type", length = 30)
+    private TechType techType = TechType.LANGUAGE; // LANGUAGE, FRAMEWORK, LIBRARY, TOOL
+
+    @Column(name = "tech_name", length = 100)
+    private String techName; // e.g. "Java", "Spring Boot", "React", "Docker", "Pandas"
 
     public Question() {}
 
@@ -80,4 +94,16 @@ public class Question {
 
     public String getExplanation() { return explanation; }
     public void setExplanation(String explanation) { this.explanation = explanation; }
+
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
+
+    public String getFramework() { return framework; }
+    public void setFramework(String framework) { this.framework = framework; }
+
+    public TechType getTechType() { return techType; }
+    public void setTechType(TechType techType) { this.techType = techType; }
+
+    public String getTechName() { return techName; }
+    public void setTechName(String techName) { this.techName = techName; }
 }

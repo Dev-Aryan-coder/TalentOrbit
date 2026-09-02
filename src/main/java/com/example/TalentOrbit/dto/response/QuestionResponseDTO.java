@@ -1,5 +1,7 @@
 package com.example.TalentOrbit.dto.response;
 
+import com.example.TalentOrbit.enums.TechType;
+
 public class QuestionResponseDTO {
     private Long id;
     private String topic;
@@ -8,6 +10,10 @@ public class QuestionResponseDTO {
     private String optionB;
     private String optionC;
     private String optionD;
+    private String language;
+    private String framework;
+    private TechType techType;
+    private String techName;
 
     public QuestionResponseDTO() {}
 
@@ -19,6 +25,20 @@ public class QuestionResponseDTO {
         this.optionB = optionB;
         this.optionC = optionC;
         this.optionD = optionD;
+    }
+
+    public QuestionResponseDTO(Long id, String topic, String text, String optionA, String optionB, String optionC, String optionD, String language, String framework, TechType techType, String techName) {
+        this.id = id;
+        this.topic = topic;
+        this.text = text;
+        this.optionA = optionA;
+        this.optionB = optionB;
+        this.optionC = optionC;
+        this.optionD = optionD;
+        this.language = language;
+        this.framework = framework;
+        this.techType = techType;
+        this.techName = techName;
     }
 
     public Long getId() { return id; }
@@ -41,4 +61,16 @@ public class QuestionResponseDTO {
 
     public String getOptionD() { return optionD; }
     public void setOptionD(String optionD) { this.optionD = optionD; }
+
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
+
+    public String getFramework() { return framework; }
+    public void setFramework(String framework) { this.framework = framework; }
+
+    public TechType getTechType() { return techType; }
+    public void setTechType(TechType techType) { this.techType = techType; }
+
+    public String getTechName() { return techName; }
+    public void setTechName(String techName) { this.techName = techName; }
 }

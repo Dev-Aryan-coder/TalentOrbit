@@ -6,6 +6,7 @@ import com.example.TalentOrbit.dto.response.AiAssessmentResponseDTO;
 import com.example.TalentOrbit.dto.response.QuestionResponseDTO;
 import com.example.TalentOrbit.entity.*;
 import com.example.TalentOrbit.enums.ProficiencyLevel;
+import com.example.TalentOrbit.enums.TechType;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.*;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -72,7 +73,8 @@ public class AiAssessmentService {
         if (groqApiKey != null && !groqApiKey.startsWith("gsk_default") && !groqApiKey.trim().isEmpty()) {
             try {
                 String systemPrompt = "You are a technical assessment architect. Return ONLY a valid JSON array of 3 distinct, topic-tagged MCQ questions for the requested skill. Format:\n" +
-                        "[{\"topic\":\"TopicName\",\"text\":\"Question text?\",\"optionA\":\"...\",\"optionB\":\"...\",\"optionC\":\"...\",\"optionD\":\"...\",\"correctOption\":\"A|B|C|D\",\"explanation\":\"...\"}]";
+                        "[{\"topic\":\"TopicName\",\"text\":\"Question text?\",\"optionA\":\"...\",\"optionB\":\"...\",\"optionC\":\"...\",\"optionD\":\"...\",\"correctOption\":\"A|B|C|D\",\"explanation\":\"...\",\"language\":\"Java|Python|JavaScript|TypeScript|Go|SQL|etc.\",\"framework\":\"Spring Boot|React|Next.js|Docker|Core|etc.\",\"techType\":\"LANGUAGE|FRAMEWORK|LIBRARY|TOOL\",\"techName\":\"ExactName\"}]";
+
                 
                 String userPrompt = "Generate 3 intermediate-to-advanced technical diagnostic MCQ questions for the skill: " + skill.getName();
 
@@ -340,5 +342,42 @@ public class AiAssessmentService {
         sb.append("5. Build a verified portfolio project demonstrating end-to-end implementation.\n");
         return sb.toString();
     }
-}
 
+    private String inferLanguage(String skillName) {
+        String lower = (skillName != null) ? skillName.toLowerCase() : "";
+        if (lower.contains("java") && !lower.contains("script")) return "Java";
+        if (lower.contains("python") || lower.contains("django") || lower.contains("flask") || lower.contains("pandas")) return "Python";
+        if (lower.contains("react") || lower.contains("node") || lower.contains("angular") || lower.contains("vue") || lower.contains("script")) return "JavaScript/TypeScript";
+        if (lower.contains("sql") || lower.contains("postgres") || lower.contains("mysql")) return "SQL";
+        if (lower.contains("docker") || lower.contains("kubernetes") || lower.contains("git") || lower.contains("aws")) return "DevOps/N/A";
+        if (lower.contains("go") || lower.contains("golang")) return "Go";
+        if (lower.contains("rust")) return "Rust";
+        return (skillName != null) ? skillName : "General";
+    }
+
+    private String inferFramework(String skillName) {
+        String lower = (skillName != null) ? skillName.toLowerCase() : "";
+        if (lower.contains("spring")) return "Spring Boot";
+        if (lower.contains("react")) return "React";
+        if (lower.contains("django")) return "Django";
+        if (lower.contains("express")) return "Express.js";
+        if (lower.contains("next")) return "Next.js";
+        if (lower.contains("docker")) return "Docker";
+        if (lower.contains("kubernetes")) return "Kubernetes";
+        return "Core";
+    }
+
+    private String inferTechType(String skillName) {
+        String lower = (skillName != null) ? skillName.toLowerCase() : "";
+        if (lower.contains("docker") || lower.contains("kubernetes") || lower.contains("git") || lower.contains("postman") || lower.contains("aws") || lower.contains("linux")) {
+            return "TOOL";
+        }
+        if (lower.contains("spring") || lower.contains("django") || lower.contains("next") || lower.contains("express") || lower.contains("angular") || lower.contains("flutter")) {
+            return "FRAMEWORK";
+        }
+        if (lower.contains("react") || lower.contains("redux") || lower.contains("pandas") || lower.contains("numpy") || lower.contains("hibernate") || lower.contains("axios")) {
+            return "LIBRARY";
+        }
+        return "LANGUAGE";
+    }
+}
