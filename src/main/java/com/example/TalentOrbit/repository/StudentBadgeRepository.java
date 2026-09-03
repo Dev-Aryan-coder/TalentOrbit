@@ -14,4 +14,5 @@ public interface StudentBadgeRepository extends JpaRepository<StudentBadge, Long
     List<StudentBadge> findByUser(User user);
     List<StudentBadge> findByUserId(Long userId);
     Optional<StudentBadge> findByUserAndBadge(User user, Badge badge);
+    Optional<StudentBadge> findByVerificationHash(String verificationHash);
 }

@@ -331,23 +331,32 @@ public class DataInitializer implements CommandLineRunner {
         b6.setCriteriaValue(1);
         badgeRepository.save(b6);
 
-        // Award initial earned badges
+        // Award initial earned badges with Cryptographic Hashes
         StudentBadge sb1 = new StudentBadge();
         sb1.setUser(student);
         sb1.setBadge(b1);
         sb1.setEarnedAt(LocalDateTime.now().minusDays(5));
+        sb1.setVerificationHash("TO-PRO-2026-A1B2C");
+        sb1.setSha256Digest("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
+        sb1.setScore(100);
         studentBadgeRepository.save(sb1);
 
         StudentBadge sb2 = new StudentBadge();
         sb2.setUser(student);
         sb2.setBadge(b2);
         sb2.setEarnedAt(LocalDateTime.now().minusDays(2));
+        sb2.setVerificationHash("TO-APP-2026-P9Q4R");
+        sb2.setSha256Digest("bc54f4d60f1cec0f9a6cb70e13f2107a4e3e3e9ba8934142b47416d010743a3e");
+        sb2.setScore(90);
         studentBadgeRepository.save(sb2);
 
         StudentBadge sb3 = new StudentBadge();
         sb3.setUser(student);
         sb3.setBadge(b4);
         sb3.setEarnedAt(LocalDateTime.now().minusDays(1));
+        sb3.setVerificationHash("TO-SKI-2026-X8F9A");
+        sb3.setSha256Digest("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+        sb3.setScore(88);
         studentBadgeRepository.save(sb3);
 
         // 7. Seed Academician Collaborations

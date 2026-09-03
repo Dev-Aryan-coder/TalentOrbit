@@ -23,6 +23,15 @@ public class StudentBadge {
     @Column(name = "earned_at", nullable = false)
     private LocalDateTime earnedAt = LocalDateTime.now();
 
+    @Column(name = "verification_hash", unique = true, length = 64)
+    private String verificationHash;
+
+    @Column(name = "sha256_digest", length = 64)
+    private String sha256Digest;
+
+    @Column(name = "score")
+    private Integer score;
+
     public StudentBadge() {}
 
     public Long getId() { return id; }
@@ -36,4 +45,13 @@ public class StudentBadge {
 
     public LocalDateTime getEarnedAt() { return earnedAt; }
     public void setEarnedAt(LocalDateTime earnedAt) { this.earnedAt = earnedAt; }
+
+    public String getVerificationHash() { return verificationHash; }
+    public void setVerificationHash(String verificationHash) { this.verificationHash = verificationHash; }
+
+    public String getSha256Digest() { return sha256Digest; }
+    public void setSha256Digest(String sha256Digest) { this.sha256Digest = sha256Digest; }
+
+    public Integer getScore() { return score; }
+    public void setScore(Integer score) { this.score = score; }
 }
