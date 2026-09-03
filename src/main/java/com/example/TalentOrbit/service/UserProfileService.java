@@ -7,6 +7,7 @@ import com.example.TalentOrbit.entity.*;
 import com.example.TalentOrbit.enums.Role;
 import com.example.TalentOrbit.exception.ResourceNotFoundException;
 import com.example.TalentOrbit.repository.*;
+import com.example.TalentOrbit.email.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ public class UserProfileService {
     @Autowired private AcademicianDetailsRepository academicianDetailsRepository;
     @Autowired private InstitutionDetailsRepository institutionDetailsRepository;
     @Autowired private StudentSkillRepository studentSkillRepository;
+    @Autowired private EmailService emailService;
 
     public UserProfileResponseDTO getProfile(Long userId) {
         User user = userRepository.findById(userId)
@@ -149,5 +151,12 @@ public class UserProfileService {
 
         user.setPasswordHash(req.getNewPassword().trim());
         userRepository.save(user);
+
+        // Security notification email dispatch
+        try {
+            emailService.sendPasswordChangedEmail(user.getEmail(), user.getFullName());
+        } catch (Exception ex) {
+            System.err.println("Password change email dispatch notice: " + ex.getMessage());
+        }
     }
 }

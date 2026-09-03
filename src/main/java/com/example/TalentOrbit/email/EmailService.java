@@ -76,6 +76,21 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
+    public void sendPasswordChangedEmail(String toEmail, String userName) {
+        String subject = "Security Alert: TalentOrbit Account Password Changed";
+        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"));
+        String body = String.format(
+            "Dear %s,\n\n" +
+            "This is an official security confirmation that the password for your TalentOrbit account was successfully changed on %s.\n\n" +
+            "If you performed this update, no further action is required.\n\n" +
+            "SECURITY WARNING: If you did not make this change, your account may be compromised. Please contact TalentOrbit Security Governance immediately at support@talentorbit.gov.in.\n\n" +
+            "Best regards,\nTalentOrbit Security & Identity Governance Team",
+            userName != null && !userName.trim().isEmpty() ? userName : "User",
+            dateStr
+        );
+        sendEmail(toEmail, subject, body);
+    }
+
     private void sendEmail(String toEmail, String subject, String body) {
         if (mailSender == null) {
             System.out.println("[EMAIL SIMULATOR - No SMTP Host Configured]");
