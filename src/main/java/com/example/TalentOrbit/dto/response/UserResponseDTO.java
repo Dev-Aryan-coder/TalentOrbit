@@ -8,6 +8,7 @@ public class UserResponseDTO {
     private Long id;
     private String email;
     private String fullName;
+    private String avatarUrl;
     private Role role;
     private UserStatus status;
     private LocalDateTime createdAt;
@@ -31,6 +32,16 @@ public class UserResponseDTO {
         this.createdAt = createdAt;
     }
 
+    public UserResponseDTO(Long id, String email, String fullName, String avatarUrl, Role role, UserStatus status, LocalDateTime createdAt) {
+        this.id = id;
+        this.email = email;
+        this.fullName = fullName;
+        this.avatarUrl = avatarUrl;
+        this.role = role;
+        this.status = status;
+        this.createdAt = createdAt;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -39,6 +50,9 @@ public class UserResponseDTO {
 
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }

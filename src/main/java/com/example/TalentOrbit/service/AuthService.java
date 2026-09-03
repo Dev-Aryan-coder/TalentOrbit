@@ -38,6 +38,7 @@ public class AuthService {
                 saved.getId(),
                 saved.getEmail(),
                 saved.getFullName(),
+                saved.getAvatarUrl(),
                 saved.getRole(),
                 saved.getStatus(),
                 saved.getCreatedAt()
@@ -60,6 +61,7 @@ public class AuthService {
                 user.getId(),
                 user.getEmail(),
                 user.getFullName(),
+                user.getAvatarUrl(),
                 user.getRole(),
                 user.getStatus(),
                 user.getCreatedAt()
