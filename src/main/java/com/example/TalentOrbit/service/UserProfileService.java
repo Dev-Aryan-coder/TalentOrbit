@@ -154,7 +154,7 @@ public class UserProfileService {
 
         // Security notification email dispatch
         try {
-            emailService.sendPasswordChangedEmail(user.getEmail(), user.getFullName());
+            emailService.sendPasswordChangedEmail(user.getEmail(), user.getFullName(), user.getRole() != null ? user.getRole().name() : "MEMBER", user.getId());
         } catch (Exception ex) {
             System.err.println("Password change email dispatch notice: " + ex.getMessage());
         }
