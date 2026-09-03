@@ -18,6 +18,8 @@ public class SignupCredentialsDTO {
     @NotNull(message = "Role is required (STUDENT, INDUSTRY, ACADEMICIAN, INSTITUTION_ADMIN)")
     private Role role;
 
+    private String fullName;
+
     public SignupCredentialsDTO() {}
 
     public String getEmail() { return email; }
@@ -28,4 +30,7 @@ public class SignupCredentialsDTO {
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 }

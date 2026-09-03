@@ -18,6 +18,9 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "full_name")
+    private String fullName;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
@@ -39,6 +42,15 @@ public class User {
         this.createdAt = LocalDateTime.now();
     }
 
+    public User(String email, String passwordHash, Role role, UserStatus status, String fullName) {
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.status = status;
+        this.fullName = fullName;
+        this.createdAt = LocalDateTime.now();
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -47,6 +59,9 @@ public class User {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }

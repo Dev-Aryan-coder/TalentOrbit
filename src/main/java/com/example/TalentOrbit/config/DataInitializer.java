@@ -67,7 +67,7 @@ public class DataInitializer implements CommandLineRunner {
         Skill kafka = skillRepository.save(new Skill("Apache Kafka", "Distributed Systems"));
 
         // 2. Seed Users across all 5 Roles
-        User student = userRepository.save(new User("aryan.sharma@vsit.edu.in", "password123", Role.STUDENT, UserStatus.VERIFIED));
+        User student = userRepository.save(new User("aryan.sharma@vsit.edu.in", "password123", Role.STUDENT, UserStatus.VERIFIED, "Aryan Sharma"));
         StudentDetails sd = new StudentDetails();
         sd.setUser(student);
         sd.setName("Aryan Sharma");
@@ -116,7 +116,7 @@ public class DataInitializer implements CommandLineRunner {
         studentSkillRepository.save(ss4);
 
         // Industry / Recruiter
-        User recruiter = userRepository.save(new User("hr@techcorp.com", "password123", Role.INDUSTRY, UserStatus.VERIFIED));
+        User recruiter = userRepository.save(new User("hr@techcorp.com", "password123", Role.INDUSTRY, UserStatus.VERIFIED, "TechCorp Campus Recruitment"));
         CompanyDetails cd = new CompanyDetails();
         cd.setUser(recruiter);
         cd.setCompanyName("TechCorp Solutions Pvt. Ltd.");
@@ -127,7 +127,7 @@ public class DataInitializer implements CommandLineRunner {
         companyDetailsRepository.save(cd);
 
         // Academician / Faculty
-        User academician = userRepository.save(new User("rajesh.sharma@vsit.edu.in", "password123", Role.ACADEMICIAN, UserStatus.VERIFIED));
+        User academician = userRepository.save(new User("rajesh.sharma@vsit.edu.in", "password123", Role.ACADEMICIAN, UserStatus.VERIFIED, "Dr. Rajesh Sharma, Ph.D."));
         AcademicianDetails ad = new AcademicianDetails();
         ad.setUser(academician);
         ad.setName("Dr. Rajesh Sharma, Ph.D.");
@@ -150,7 +150,7 @@ public class DataInitializer implements CommandLineRunner {
         academicianInterestTagRepository.save(ait2);
 
         // Institution / TPO
-        User tpo = userRepository.save(new User("tpo@vsit.edu.in", "password123", Role.INSTITUTION_ADMIN, UserStatus.VERIFIED));
+        User tpo = userRepository.save(new User("tpo@vsit.edu.in", "password123", Role.INSTITUTION_ADMIN, UserStatus.VERIFIED, "VSIT Training & Placement Office"));
         InstitutionDetails id = new InstitutionDetails();
         id.setUser(tpo);
         id.setInstitutionName("Vidyalankar School of Information Technology (VSIT)");
@@ -163,7 +163,7 @@ public class DataInitializer implements CommandLineRunner {
         institutionDetailsRepository.save(id);
 
         // SuperAdmin
-        User admin = userRepository.save(new User("superadmin@talentorbit.gov.in", "admin123", Role.SUPERADMIN, UserStatus.VERIFIED));
+        User admin = userRepository.save(new User("superadmin@talentorbit.gov.in", "admin123", Role.SUPERADMIN, UserStatus.VERIFIED, "Super Administrator"));
 
         // 3. Seed Postings
         Posting p1 = new Posting();
