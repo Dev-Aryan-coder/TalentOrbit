@@ -23,6 +23,7 @@ public class BadgeService {
     @Autowired private BadgeRepository badgeRepository;
     @Autowired private StudentBadgeRepository studentBadgeRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private StudentDetailsRepository studentDetailsRepository;
     @Autowired private ApplicationRepository applicationRepository;
     @Autowired private AssessmentRepository assessmentRepository;
     @Autowired private StudentSkillRepository studentSkillRepository;
@@ -94,8 +95,21 @@ public class BadgeService {
         StudentBadge sb = studentBadgeRepository.findByVerificationHash(hash)
                 .orElseThrow(() -> new ResourceNotFoundException("No official credential found for hash: " + hash));
 
+        // Resolve candidate name gracefully from User.fullName or StudentDetails.name or email
+        String candidateName = null;
+        if (sb.getUser().getFullName() != null && !sb.getUser().getFullName().trim().isEmpty()) {
+            candidateName = sb.getUser().getFullName().trim();
+        } else {
+            Optional<StudentDetails> sd = studentDetailsRepository.findByUser(sb.getUser());
+            if (sd.isPresent() && sd.get().getName() != null && !sd.get().getName().trim().isEmpty()) {
+                candidateName = sd.get().getName().trim();
+            } else {
+                candidateName = sb.getUser().getEmail();
+            }
+        }
+
         VerifyBadgeResponseDTO dto = new VerifyBadgeResponseDTO();
-        dto.setCandidateName(sb.getUser().getFullName() != null ? sb.getUser().getFullName() : sb.getUser().getEmail());
+        dto.setCandidateName(candidateName);
         dto.setCandidateEmail(sb.getUser().getEmail());
         dto.setBadgeName(sb.getBadge().getName());
         dto.setDescription(sb.getBadge().getDescription());
